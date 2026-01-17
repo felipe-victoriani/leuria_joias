@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>"
+    />
+    <title>Painel Administrativo - OutLet MakeUp</title>
+    <link rel="stylesheet" href="admin.css" />
+    <!-- Google reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- EmailJS para envio de emails -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  </head>
+  <body>
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="login-container">
+      <a href="index.html" class="btn-back-to-store">Voltar para Loja</a>
+      <div class="login-box">
+        <h1>🔐 Acesso Administrativo</h1>
+        <p class="login-subtitle">OutLet MakeUp</p>
+
+        <form id="login-form" class="login-form">
+          <div class="form-group">
+            <label for="username">Usuário:</label>
+            <input
+              type="text"
+              id="username"
+              placeholder="Digite seu usuário"
+              required
+              autocomplete="username"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Senha:</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Digite sua senha"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <!-- Google reCAPTCHA -->
+          <div
+            class="form-group"
+            style="display: flex; justify-content: center; margin: 15px 0"
+          >
+            <div
+              class="g-recaptcha"
+              data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+            ></div>
+          </div>
+
+          <button type="submit" class="btn-login">Entrar no Painel</button>
+
+          <div id="login-error" class="error-message" style="display: none">
+            ❌ Usuário ou senha incorretos!
+          </div>
+
+          <div
+            id="login-blocked"
+            class="error-message"
+            style="display: none; background: #ff6b6b"
+          >
+            🚫 Muitas tentativas! Aguarde
+            <span id="countdown">60</span> segundos.
+          </div>
+
+          <a href="reset-password.html" class="btn-forgot">
+            🔑 Esqueci minha senha
+          </a>
+        </form>
+      </div>
+    </div>
+
+    <!-- PAINEL ADMINISTRATIVO -->
+    <div id="admin-panel" class="admin-panel" style="display: none">
+      <!-- HEADER DO PAINEL -->
+      <header class="admin-header">
+        <div class="admin-header-content">
+          <h1>✨ Painel Administrativo</h1>
+          <div class="admin-header-actions">
+            <a href="index.html" class="btn-back-store">🏪 Ir para Loja</a>
+            <span class="admin-user">👤 Administrador</span>
+            <button id="btn-logout" class="btn-logout">Sair</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTEÚDO PRINCIPAL -->
+      <main class="admin-main">
+        <!-- ESTATÍSTICAS -->
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <h3 id="total-products">0</h3>
+              <p>Total de Produtos</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <h3 id="available-products">0</h3>
+              <p>Disponíveis</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">❌</div>
+            <div class="stat-info">
+              <h3 id="sold-out-products">0</h3>
+              <p>Esgotados</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AÇÕES PRINCIPAIS -->
+        <div class="actions-bar">
+          <button id="btn-add-product" class="btn-primary">
+            ➕ Adicionar Novo Produto
+          </button>
+          <div class="filter-group">
+            <label for="filter-category">Filtrar por categoria:</label>
+            <select id="filter-category" class="filter-select">
+              <option value="all">Todas as Categorias</option>
+              <option value="maquiagem">Maquiagens</option>
+              <option value="pijama">Pijamas</option>
+              <option value="sexy-shop">Sexy Shop</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- LISTA DE PRODUTOS -->
+        <div class="products-container">
+          <h2>📋 Produtos Cadastrados</h2>
+          <div id="products-list" class="products-list">
+            <!-- Produtos serão inseridos aqui pelo JavaScript -->
+          </div>
+          <div id="empty-message" class="empty-message" style="display: none">
+            📭 Nenhum produto cadastrado ainda.<br />
+            Clique em "Adicionar Novo Produto" para começar!
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- MODAL DE CADASTRO/EDIÇÃO DE PRODUTO -->
+    <div id="product-modal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">➕ Adicionar Produto</h2>
+          <button id="btn-close-modal" class="btn-close-modal">&times;</button>
+        </div>
+
+        <form id="product-form" class="product-form">
+          <input type="hidden" id="product-id" />
+
+          <div class="form-group">
+            <label for="product-name">Nome do Produto: *</label>
+            <input
+              type="text"
+              id="product-name"
+              placeholder="Ex: Batom Vermelho Matte"
+              required
+            />
+            <small>Digite o nome completo do produto</small>
+          </div>
+
+          <div class="form-group">
+            <label for="product-category">Categoria: *</label>
+            <select id="product-category" required>
+              <option value="">Selecione uma categoria</option>
+              <option value="maquiagem">💄 Maquiagens</option>
+              <option value="pijama">👘 Pijamas</option>
+              <option value="sexy-shop">🔥 Sexy Shop</option>
+            </select>
+            <small>Escolha em qual seção o produto aparecerá</small>
+          </div>
+
+          <div class="form-group">
+            <label for="product-price">Preço: *</label>
+            <input
+              type="text"
+              id="product-price"
+              placeholder="Ex: 49.90 ou 49,90"
+              pattern="^\d+([.,]\d{2})?$"
+              title="Digite apenas números e vírgula/ponto (ex: 49.90)"
+              required
+            />
+            <small>Digite apenas números e vírgula (ex: 49,90)</small>
+          </div>
+
+          <div class="form-group">
+            <label for="product-image">Imagem do Produto: *</label>
+            <input type="file" id="product-image" accept="image/*" required />
+            <small
+              >Escolha uma imagem do seu computador (JPG, PNG ou GIF)</small
+            >
+            <div id="image-preview" class="image-preview" style="display: none">
+              <img id="preview-img" src="" alt="Preview" />
+            </div>
+          </div>
+
+          <div class="form-group-checkbox">
+            <input type="checkbox" id="product-sold-out" />
+            <label for="product-sold-out">
+              <strong>❌ Produto Esgotado</strong>
+              <small
+                >Marque esta opção se o produto não estiver disponível no
+                momento</small
+              >
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="btn-cancel" class="btn-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary">💾 Salvar Produto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- NOTIFICAÇÃO -->
+    <div id="notification" class="notification" style="display: none"></div>
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Configuração do Firebase -->
+    <script src="firebase-config.js"></script>
+
+    <!-- Sistema de Segurança -->
+    <script src="admin-security.js"></script>
+
+    <!-- Script do Admin -->
+    <script src="admin.js"></script>
+  </body>
+</html>
