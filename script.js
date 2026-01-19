@@ -14,7 +14,7 @@
 // ========================================
 
 const CONFIG = {
-  WHATSAPP_NUMBER: "5511987654321", // ⚠️ Alterar para o WhatsApp da loja
+  WHATSAPP_NUMBER: "5567996149130", // ⚠️ Alterar para o WhatsApp da loja
   STORAGE_KEY: "outlet_makeup_products",
 };
 
@@ -54,15 +54,22 @@ const ProductService = {
   async getAll() {
     try {
       // Tenta buscar do Firebase primeiro
-      if (window.FirebaseProductService && firebaseInitialized) {
-        return await window.FirebaseProductService.getAll();
+      if (window.FirebaseProductService && window.firebaseInitialized) {
+        const fbProducts = await window.FirebaseProductService.getAll();
+        console.log(`🔥 Carregados ${fbProducts.length} produtos do Firebase`);
+        return fbProducts;
       }
     } catch (error) {
       console.warn("⚠️ Erro ao buscar do Firebase, usando LocalStorage", error);
     }
 
     // Fallback para LocalStorage
-    return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+    const localProducts =
+      JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+    console.log(
+      `💾 Carregados ${localProducts.length} produtos do LocalStorage`,
+    );
+    return localProducts;
   },
 
   async getAvailable() {
@@ -210,11 +217,11 @@ async function loadDynamicProducts() {
 
     // Filtra apenas produtos disponíveis (não esgotados)
     const availableProducts = products.filter(
-      (p) => p.status === "available" && !p.soldOut
+      (p) => p.status === "available" && !p.soldOut,
     );
 
     console.log(
-      `📦 ${products.length} produtos totais, ${availableProducts.length} disponíveis`
+      `📦 ${products.length} produtos totais, ${availableProducts.length} disponíveis`,
     );
 
     // Carrega produtos por categoria
@@ -222,7 +229,7 @@ async function loadDynamicProducts() {
       await loadProductsByCategory(
         availableProducts,
         "maquiagem",
-        "makeup-grid"
+        "makeup-grid",
       );
     }
 
@@ -267,6 +274,11 @@ function loadSexyShopProducts(products) {
   sexyProducts.forEach((product) => {
     grid.appendChild(ProductRenderer.createCard(product, true));
   });
+
+  // Re-atribuir event listeners aos novos botões
+  if (window.CartUIController) {
+    window.CartUIController.attachCartButtons();
+  }
 }
 
 /**
@@ -287,6 +299,11 @@ function loadProductsByCategory(products, category, gridId) {
     const card = ProductRenderer.createCard(product, false);
     grid.appendChild(card);
   });
+
+  // Re-atribuir event listeners aos novos botões
+  if (window.CartUIController) {
+    window.CartUIController.attachCartButtons();
+  }
 }
 
 // ========================================
@@ -307,11 +324,6 @@ const ProductRenderer = {
 
     const badge = product.isNew ? '<div class="sexy-badge">Novo</div>' : "";
 
-    const buttonClass = isSexyShop ? "btn sexy-btn-buy" : "btn btn-buy";
-    const buttonText = isSexyShop
-      ? "<span>🔒</span> Comprar com Discrição"
-      : "Comprar no WhatsApp";
-
     const priceFormatted = PriceHelper.format(product.price);
 
     card.innerHTML = `
@@ -324,10 +336,11 @@ const ProductRenderer = {
         <h3 class="product-name">${product.name}</h3>
         <p class="product-price ${isSexyShop ? "sexy-price" : ""}">R$ ${priceFormatted}</p>
         <button 
-          class="${buttonClass}" 
-          data-product="${product.name} - R$ ${priceFormatted}"
-          data-category="${product.category}">
-          ${buttonText}
+          class="btn btn-add-to-cart" 
+          data-name="${product.name}"
+          data-price="${priceFormatted}"
+          data-image="${product.image}">
+          🛒 Adicionar ao Carrinho
         </button>
       </div>
     `;
@@ -363,7 +376,7 @@ const ImageHelper = {
 
   isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
+      navigator.userAgent,
     );
   },
 };
@@ -400,3 +413,312 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Exportar funções globais (para compatibilidade)
 window.openWhatsApp = WhatsAppService.open;
+
+// ========================================
+// SISTEMA DE CARRINHO DE COMPRAS
+// ========================================
+
+/**
+ * Serviço de Carrinho - Gerencia localStorage e operações
+ */
+const CartService = {
+  STORAGE_KEY: "andreza_store_cart",
+
+  getCart() {
+    const cart = localStorage.getItem(this.STORAGE_KEY);
+    return cart ? JSON.parse(cart) : [];
+  },
+
+  saveCart(cart) {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cart));
+  },
+
+  addItem(product) {
+    const cart = this.getCart();
+    const existingItem = cart.find((item) => item.name === product.name);
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({
+        name: product.name,
+        price: parseFloat(product.price),
+        image: product.image,
+        quantity: 1,
+      });
+    }
+
+    this.saveCart(cart);
+    return cart;
+  },
+
+  updateQuantity(productName, newQuantity) {
+    if (newQuantity < 1) return this.getCart();
+
+    const cart = this.getCart();
+    const item = cart.find((item) => item.name === productName);
+
+    if (item) {
+      item.quantity = newQuantity;
+      this.saveCart(cart);
+    }
+
+    return cart;
+  },
+
+  removeItem(productName) {
+    let cart = this.getCart();
+    cart = cart.filter((item) => item.name !== productName);
+    this.saveCart(cart);
+    return cart;
+  },
+
+  clearCart() {
+    localStorage.removeItem(this.STORAGE_KEY);
+    return [];
+  },
+
+  getTotal() {
+    const cart = this.getCart();
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  },
+
+  getItemCount() {
+    const cart = this.getCart();
+    return cart.reduce((count, item) => count + item.quantity, 0);
+  },
+};
+
+/**
+ * Controller de UI do Carrinho
+ */
+const CartUIController = {
+  modal: null,
+  overlay: null,
+  cartIcon: null,
+  cartBadge: null,
+  cartBody: null,
+  cartItems: null,
+  cartEmpty: null,
+  cartTotal: null,
+
+  init() {
+    this.modal = document.getElementById("cart-modal");
+    this.overlay = document.getElementById("cart-overlay");
+    this.cartIcon = document.getElementById("cart-icon");
+    this.cartBadge = document.getElementById("cart-badge");
+    this.cartBody = document.getElementById("cart-body");
+    this.cartItems = document.getElementById("cart-items");
+    this.cartEmpty = document.getElementById("cart-empty");
+    this.cartTotal = document.getElementById("cart-total");
+
+    this.setupEventListeners();
+    this.updateUI();
+  },
+
+  setupEventListeners() {
+    // Abrir carrinho
+    this.cartIcon.addEventListener("click", () => this.openCart());
+
+    // Fechar carrinho
+    document
+      .getElementById("cart-close")
+      .addEventListener("click", () => this.closeCart());
+    this.overlay.addEventListener("click", () => this.closeCart());
+
+    // Limpar carrinho
+    document
+      .getElementById("clear-cart")
+      .addEventListener("click", () => this.clearCart());
+
+    // Finalizar no WhatsApp
+    document
+      .getElementById("checkout-whatsapp")
+      .addEventListener("click", () => this.checkoutWhatsApp());
+
+    // Adicionar ao carrinho (produtos estáticos)
+    this.attachCartButtons();
+  },
+
+  attachCartButtons() {
+    // Adicionar ao carrinho
+    document.querySelectorAll(".btn-add-to-cart").forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const product = {
+          name: button.dataset.name,
+          price: button.dataset.price,
+          image: button.dataset.image,
+        };
+        this.addToCart(product, button);
+      });
+    });
+  },
+
+  openCart() {
+    this.modal.classList.add("active");
+    document.body.style.overflow = "hidden";
+  },
+
+  closeCart() {
+    this.modal.classList.remove("active");
+    document.body.style.overflow = "";
+  },
+
+  addToCart(product, button) {
+    // Adicionar produto
+    CartService.addItem(product);
+
+    // Animação do botão
+    button.classList.add("adding");
+    setTimeout(() => button.classList.remove("adding"), 300);
+
+    // Atualizar UI
+    this.updateUI();
+
+    // Mostrar feedback visual
+    this.showAddedFeedback();
+  },
+
+  showAddedFeedback() {
+    // Animar badge
+    this.cartBadge.style.animation = "none";
+    setTimeout(() => {
+      this.cartBadge.style.animation = "pulse 2s infinite";
+    }, 10);
+  },
+
+  updateUI() {
+    const cart = CartService.getCart();
+    const itemCount = CartService.getItemCount();
+    const total = CartService.getTotal();
+
+    // Atualizar badge
+    this.cartBadge.textContent = itemCount;
+    this.cartBadge.style.display = itemCount > 0 ? "flex" : "none";
+
+    // Atualizar total
+    this.cartTotal.textContent = `R$ ${total.toFixed(2).replace(".", ",")}`;
+
+    // Mostrar/esconder mensagem de carrinho vazio
+    if (cart.length === 0) {
+      this.cartEmpty.style.display = "block";
+      this.cartItems.style.display = "none";
+    } else {
+      this.cartEmpty.style.display = "none";
+      this.cartItems.style.display = "flex";
+      this.renderCartItems(cart);
+    }
+  },
+
+  renderCartItems(cart) {
+    this.cartItems.innerHTML = "";
+
+    cart.forEach((item) => {
+      const cartItem = document.createElement("div");
+      cartItem.className = "cart-item";
+      cartItem.innerHTML = `
+        <img src="${item.image}" alt="${item.name}" class="cart-item-image" />
+        <div class="cart-item-details">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">R$ ${item.price.toFixed(2).replace(".", ",")}</div>
+          <div class="cart-item-actions">
+            <div class="cart-item-qty-control">
+              <button class="cart-item-qty-btn" data-action="decrease" data-name="${item.name}" ${item.quantity <= 1 ? "disabled" : ""}>
+                −
+              </button>
+              <span class="cart-item-qty">${item.quantity}</span>
+              <button class="cart-item-qty-btn" data-action="increase" data-name="${item.name}">
+                +
+              </button>
+            </div>
+            <button class="cart-item-remove" data-name="${item.name}">
+              🗑️ Remover
+            </button>
+          </div>
+        </div>
+      `;
+
+      this.cartItems.appendChild(cartItem);
+    });
+
+    // Adicionar event listeners aos botões
+    this.setupItemEventListeners();
+  },
+
+  setupItemEventListeners() {
+    // Aumentar/diminuir quantidade
+    document.querySelectorAll(".cart-item-qty-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.action;
+        const productName = button.dataset.name;
+        const cart = CartService.getCart();
+        const item = cart.find((i) => i.name === productName);
+
+        if (item) {
+          const newQuantity =
+            action === "increase" ? item.quantity + 1 : item.quantity - 1;
+          CartService.updateQuantity(productName, newQuantity);
+          this.updateUI();
+        }
+      });
+    });
+
+    // Remover item
+    document.querySelectorAll(".cart-item-remove").forEach((button) => {
+      button.addEventListener("click", () => {
+        const productName = button.dataset.name;
+        CartService.removeItem(productName);
+        this.updateUI();
+      });
+    });
+  },
+
+  clearCart() {
+    if (confirm("Deseja realmente limpar o carrinho?")) {
+      CartService.clearCart();
+      this.updateUI();
+    }
+  },
+
+  checkoutWhatsApp() {
+    const cart = CartService.getCart();
+
+    if (cart.length === 0) {
+      alert("Seu carrinho está vazio!");
+      return;
+    }
+
+    const total = CartService.getTotal();
+    let message = "🛍️ *Olá! Gostaria de fazer um pedido:*\n\n";
+
+    cart.forEach((item, index) => {
+      const subtotal = item.price * item.quantity;
+      message += `${index + 1}. *${item.name}*\n`;
+      message += `   • Quantidade: ${item.quantity}\n`;
+      message += `   • Preço unitário: R$ ${item.price.toFixed(2).replace(".", ",")}\n`;
+      message += `   • Subtotal: R$ ${subtotal.toFixed(2).replace(".", ",")}\n\n`;
+    });
+
+    message += `💰 *TOTAL: R$ ${total.toFixed(2).replace(".", ",")}*\n\n`;
+    message += "Aguardo confirmação! 😊";
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodedMessage}`;
+
+    window.open(whatsappURL, "_blank");
+  },
+};
+
+// ========================================
+// INICIALIZAÇÃO DO CARRINHO
+// ========================================
+
+// Adicionar ao evento DOMContentLoaded existente
+document.addEventListener("DOMContentLoaded", () => {
+  // Inicializar carrinho após outros componentes
+  setTimeout(() => {
+    CartUIController.init();
+    window.CartUIController = CartUIController; // Exportar globalmente
+    console.log("🛒 Sistema de carrinho inicializado!");
+  }, 100);
+});

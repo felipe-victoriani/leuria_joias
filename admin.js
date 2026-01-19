@@ -397,8 +397,6 @@ function setupEventListeners() {
         closeModal();
       }
     });
-      }
-    });
   }
 }
 
@@ -510,8 +508,19 @@ function getProducts() {
   return productsJSON ? JSON.parse(productsJSON) : [];
 }
 
-function saveProducts(products) {
+async function saveProducts(products) {
+  // Salva no localStorage (backup)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+
+  // Salva no Firebase
+  if (window.FirebaseProductService && window.firebaseInitialized) {
+    try {
+      await window.FirebaseProductService.saveAll(products);
+      console.log("✅ Produtos salvos no Firebase!");
+    } catch (error) {
+      console.error("❌ Erro ao salvar no Firebase:", error);
+    }
+  }
 }
 
 function loadProducts() {

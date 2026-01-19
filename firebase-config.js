@@ -40,14 +40,15 @@
  */
 
 // ⚠️ SUBSTITUA ESTAS CONFIGURAÇÕES PELAS SUAS DO FIREBASE
+//Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "seu-projeto.firebaseapp.com",
-  databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com",
-  projectId: "seu-projeto",
-  storageBucket: "seu-projeto.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456",
+  apiKey: "AIzaSyDmFDrG5ds2-GMpVGDR0spDfK_0-I51Tng",
+  authDomain: "andreza-loja.firebaseapp.com",
+  databaseURL: "https://andreza-loja-default-rtdb.firebaseio.com",
+  projectId: "andreza-loja",
+  storageBucket: "andreza-loja.firebasestorage.app",
+  messagingSenderId: "922143079109",
+  appId: "1:922143079109:web:f4fc642adaf14b538f8eac",
 };
 
 // ========================================
@@ -65,7 +66,7 @@ function initFirebase() {
     // Verifica se o Firebase está disponível
     if (typeof firebase === "undefined") {
       console.error(
-        "❌ Firebase SDK não carregado. Verifique se os scripts estão no HTML."
+        "❌ Firebase SDK não carregado. Verifique se os scripts estão no HTML.",
       );
       return false;
     }
@@ -79,6 +80,7 @@ function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     database = firebase.database();
     firebaseInitialized = true;
+    window.firebaseInitialized = true; // Exporta globalmente
 
     console.log("✅ Firebase inicializado com sucesso!");
     return true;
