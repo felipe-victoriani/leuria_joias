@@ -5,47 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Loja feminina de maquiagens e pijamas - Andreza Store"
+      content="Sexy Shop - Produtos sensuais e elegantes com discrição garantida"
     />
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Andreza Store - Maquiagens & Pijamas" />
-    <meta
-      property="og:description"
-      content="Loja feminina de maquiagens e pijamas com os melhores produtos e preços"
-    />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Andreza Store - Maquiagens & Pijamas" />
-    <meta
-      name="twitter:description"
-      content="Loja feminina de maquiagens e pijamas com os melhores produtos e preços"
-    />
-
     <link
       rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>"
     />
-    <title>Andreza Store - Maquiagens & Pijamas</title>
-    <link rel="stylesheet" href="css/style.css" />
+    <title>Sexy Shop - OutLet MakeUp</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/sexyshop.css" />
   </head>
-  <body>
+  <body class="sexy-shop-body">
     <!-- HEADER -->
-    <header class="header">
+    <header class="header sexy-shop-header">
       <div class="container">
         <div class="logo">
-          <h1>✨ OutLet MakeUp</h1>
+          <h1>🔥 Sexy Shop</h1>
         </div>
         <nav class="nav">
-          <a href="#inicio" class="nav-link">Início</a>
-          <a href="#maquiagens" class="nav-link">Maquiagens</a>
-          <a href="#pijamas" class="nav-link">Pijamas</a>
-          <a href="pages/sexyshop.html" class="nav-link nav-link-sexy"
-            >🔞 Sexy Shop</a
-          >
-          <a href="#contato" class="nav-link">Contato</a>
+          <a href="../index.html" class="nav-link">Voltar à Loja</a>
+          <a href="#produtos-sexy" class="nav-link">Produtos</a>
+          <a href="#sobre-sexy" class="nav-link">Sobre</a>
+          <a href="../index.html#contato" class="nav-link">Contato</a>
         </nav>
         <button
           class="cart-icon"
@@ -63,42 +44,80 @@
       </div>
     </header>
 
-    <!-- BANNER PRINCIPAL -->
-    <section id="inicio" class="hero">
-      <div class="hero-content">
-        <h2 class="hero-title">Beleza que Transforma, Conforto que Encanta</h2>
-        <p class="hero-subtitle">
-          Descubra maquiagens incríveis e pijamas confortáveis para se sentir
-          radiante todos os dias
+    <!-- BANNER SEXY SHOP -->
+    <section class="sexy-hero">
+      <div class="sexy-hero-overlay"></div>
+      <div class="sexy-hero-content">
+        <h2 class="sexy-hero-title">Desperte Seus Sentidos</h2>
+        <p class="sexy-hero-subtitle">
+          Elegância, sensualidade e discrição em cada detalhe
         </p>
-        <a href="#maquiagens" class="btn btn-primary">Ver Produtos</a>
+
+        <a href="#produtos-sexy" class="btn sexy-btn-primary">Ver Produtos</a>
       </div>
     </section>
 
-    <!-- SEÇÃO MAQUIAGENS -->
-    <section id="maquiagens" class="products-section">
+    <!-- AVISO DE DISCRIÇÃO -->
+    <section class="discretion-notice">
       <div class="container">
-        <h2 class="section-title">💄 Maquiagens</h2>
-        <p class="section-subtitle">
-          Realce sua beleza natural com produtos de qualidade
-        </p>
-
-        <div class="products-grid" id="makeup-grid">
-          <!-- Produtos carregados dinamicamente do Firebase -->
+        <div class="discretion-content">
+          <span class="discretion-icon">🔒</span>
+          <div class="discretion-text">
+            <h3>Compra 100% Discreta</h3>
+            <p>
+              Embalagem neutra, sem identificação externa. Seu pedido é tratado
+              com máximo sigilo e profissionalismo.
+            </p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- SEÇÃO PIJAMAS -->
-    <section id="pijamas" class="products-section products-section-alt">
+    <!-- SEÇÃO DE PRODUTOS -->
+    <section id="produtos-sexy" class="sexy-products-section">
       <div class="container">
-        <h2 class="section-title">🌙 Pijamas</h2>
-        <p class="section-subtitle">
-          Conforto e estilo para suas noites perfeitas
+        <h2 class="sexy-section-title">Nossos Produtos</h2>
+        <p class="sexy-section-subtitle">
+          Explore nossa coleção exclusiva e elegante
         </p>
 
-        <div class="products-grid" id="pajamas-grid">
-          <!-- Produtos carregados dinamicamente do Firebase -->
+        <!-- Produtos carregados dinamicamente do Firebase -->
+      </div>
+    </section>
+
+    <!-- SEÇÃO SOBRE -->
+    <section id="sobre-sexy" class="sexy-about">
+      <div class="container">
+        <div class="about-content">
+          <h2 class="sexy-section-title">Sobre Nossa Coleção</h2>
+          <p>
+            Nossa linha Sexy Shop foi cuidadosamente selecionada para oferecer
+            produtos de alta qualidade com o máximo de elegância e sensualidade.
+            Trabalhamos com marcas reconhecidas e garantimos total discrição em
+            todo o processo de compra e entrega.
+          </p>
+          <div class="features-grid">
+            <div class="feature-item">
+              <span class="feature-icon">🔒</span>
+              <h4>Discrição Total</h4>
+              <p>Embalagem neutra sem identificação</p>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✨</span>
+              <h4>Qualidade Premium</h4>
+              <p>Produtos selecionados e certificados</p>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">💳</span>
+              <h4>Pagamento Seguro</h4>
+              <p>Várias formas de pagamento</p>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">📦</span>
+              <h4>Entrega Rápida</h4>
+              <p>Envio para todo Brasil</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -144,12 +163,12 @@
     </div>
 
     <!-- FOOTER -->
-    <footer id="contato" class="footer">
+    <footer class="footer sexy-footer">
       <div class="container">
         <div class="footer-content">
           <div class="footer-section">
-            <h3>✨ OutLet MakeUp</h3>
-            <p>Sua beleza e conforto em primeiro lugar!</p>
+            <h3>🔥 Sexy Shop</h3>
+            <p>Elegância e sensualidade com discrição total</p>
           </div>
 
           <div class="footer-section">
@@ -175,27 +194,23 @@
                 >@outletmakeup.cg</a
               >
             </p>
-            <p>📍 Campo Grande, MS</p>
+            <p>🔒 Atendimento discreto e sigiloso</p>
           </div>
 
           <div class="footer-section">
             <h4>Atendimento</h4>
             <p>Segunda a Sexta: 9h às 18h</p>
             <p>Sábado: 9h às 14h</p>
-            <a href="#" class="btn btn-whatsapp" id="contact-whatsapp">
-              💬 Fale Conosco no WhatsApp
+            <a href="#" class="btn sexy-btn-whatsapp" id="contact-whatsapp">
+              💬 Tire suas dúvidas no WhatsApp
             </a>
           </div>
         </div>
 
         <div class="footer-bottom">
           <p>
-            &copy; 2026 OutLet MakeUp. Todos os direitos reservados. |
-            <a
-              href="./pages/admin.html"
-              style="color: #667eea; text-decoration: none; font-weight: 600"
-              >🔐 Acesso Admin</a
-            >
+            &copy; 2026 OutLet MakeUp - Sexy Shop. Todos os direitos reservados.
+            | <a href="../index.html">Voltar à Loja Principal</a>
           </p>
         </div>
       </div>
@@ -207,9 +222,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <!-- Configuração do Firebase -->
-    <script src="js/firebase-config.js"></script>
+    <script src="../js/firebase-config.js"></script>
 
     <!-- Script principal -->
-    <script src="js/script.js"></script>
+    <script src="../js/script.js"></script>
   </body>
 </html>

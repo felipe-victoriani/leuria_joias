@@ -1,0 +1,39 @@
+{
+  "rules": {
+    "products": {
+      ".read": true,
+      ".write": "auth != null",
+      ".indexOn": ["category", "status", "createdAt"],
+      "$productId": {
+        ".validate": "newData.hasChildren(['name', 'price', 'category', 'status'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+        },
+        "price": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]+\\.?[0-9]{0,2}$/)"
+        },
+        "category": {
+          ".validate": "newData.isString() && (newData.val() === 'maquiagem' || newData.val() === 'pijama' || newData.val() === 'sexy-shop')"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'available' || newData.val() === 'unavailable')"
+        },
+        "image": {
+          ".validate": "newData.isString() && newData.val().matches(/^https?:\\/\\/.+/)"
+        },
+        "soldOut": {
+          ".validate": "newData.isBoolean()"
+        },
+        "isNew": {
+          ".validate": "newData.isBoolean()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    }
+  }
+}

@@ -3,9 +3,7 @@
    Sistema de gerenciamento de produtos
 ======================================== */
 
-// CREDENCIAIS DE ACESSO
-const ADMIN_USER = "admin";
-const ADMIN_PASSWORD = "admin123";
+// DEV_MODE, devLog, devWarn, devError são definidos em admin-security.js
 
 // CHAVE DO LOCALSTORAGE
 const STORAGE_KEY = "outlet_makeup_products";
@@ -259,25 +257,40 @@ async function initializeProducts() {
   try {
     const products = await FirebaseProductService.getAll();
 
+    // Se não há produtos no Firebase, verifica LocalStorage para migrar
     if (products.length === 0) {
-      console.log("📦 Importando produtos iniciais...");
-      await FirebaseProductService.saveAll(INITIAL_PRODUCTS);
-      console.log(
-        "✅ " + INITIAL_PRODUCTS.length + " produtos importados com sucesso!",
-      );
+      const localProducts = localStorage.getItem(STORAGE_KEY);
+
+      if (localProducts && localProducts !== "[]") {
+        // Migra produtos do LocalStorage para o Firebase
+        const productsToMigrate = JSON.parse(localProducts);
+        if (productsToMigrate.length > 0) {
+          devLog(
+            `📦 Migrando ${productsToMigrate.length} produtos para o Firebase...`,
+          );
+          await FirebaseProductService.saveAll(productsToMigrate);
+          devLog("✅ Produtos migrados com sucesso para o Firebase!");
+        }
+      } else {
+        // Se não tem nada, importa os produtos iniciais
+        devLog("📦 Importando produtos iniciais para o Firebase...");
+        await FirebaseProductService.saveAll(INITIAL_PRODUCTS);
+        devLog(
+          `✅ ${INITIAL_PRODUCTS.length} produtos importados com sucesso!`,
+        );
+      }
+    } else {
+      devLog(`✅ ${products.length} produtos já existem no Firebase`);
     }
 
-    // Backup no LocalStorage
-    const existingProducts = localStorage.getItem(STORAGE_KEY);
-    if (!existingProducts || existingProducts === "[]") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
-    }
+    // Sincroniza Firebase com LocalStorage
+    const finalProducts = await FirebaseProductService.getAll();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(finalProducts));
   } catch (error) {
-    console.error("Erro ao inicializar produtos:", error);
+    devError("Erro ao inicializar produtos:", error);
     // Fallback para LocalStorage
     const existingProducts = localStorage.getItem(STORAGE_KEY);
     if (!existingProducts || existingProducts === "[]") {
-      console.log("📦 Importando produtos iniciais (fallback)...");
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
     }
   }
@@ -291,13 +304,11 @@ document.addEventListener("DOMContentLoaded", async function () {
   const firebaseReady = initFirebase();
 
   if (firebaseReady) {
-    console.log("✅ Firebase conectado!");
+    devLog("✅ Firebase conectado!");
     await initializeProducts();
   } else {
-    console.warn(
-      "⚠️ Firebase não configurado. Usando LocalStorage como fallback.",
-    );
-    console.log(
+    devWarn("⚠️ Firebase não configurado. Usando LocalStorage como fallback.");
+    devLog(
       "💡 Configure o Firebase seguindo as instruções em firebase-config.js",
     );
   }
@@ -349,6 +360,18 @@ function setupEventListeners() {
   const filterCategory = document.getElementById("filter-category");
   if (filterCategory) {
     filterCategory.addEventListener("change", filterProducts);
+  }
+
+  // Botão de sincronização Firebase
+  const btnSyncFirebase = document.getElementById("btn-sync-firebase");
+  if (btnSyncFirebase) {
+    btnSyncFirebase.addEventListener("click", syncAllToFirebase);
+  }
+
+  // Botão de importar produtos iniciais
+  const btnImportInitial = document.getElementById("btn-import-initial");
+  if (btnImportInitial) {
+    btnImportInitial.addEventListener("click", importInitialProducts);
   }
 
   // Preview de imagem
@@ -404,9 +427,8 @@ function setupEventListeners() {
 // AUTENTICAÇÃO
 // ========================================
 function checkLogin() {
-  const isLoggedIn = sessionStorage.getItem("admin_logged_in");
-
-  if (isLoggedIn === "true") {
+  // Verificar se usuário já está autenticado no Firebase
+  if (firebase.auth && firebase.auth().currentUser) {
     showAdminPanel();
   } else {
     showLoginScreen();
@@ -425,79 +447,65 @@ function showAdminPanel() {
   updateStats();
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
 
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
   const errorMessage = document.getElementById("login-error");
-  const blockedMessage = document.getElementById("login-blocked");
+  const submitButton = e.target.querySelector('button[type="submit"]');
 
-  // Obter resposta do reCAPTCHA (ou null em desenvolvimento)
-  let captchaResponse = null;
-  if (typeof grecaptcha !== "undefined") {
-    captchaResponse = grecaptcha.getResponse();
-  }
+  // Desabilitar botão durante o login
+  submitButton.disabled = true;
+  submitButton.textContent = "Entrando...";
 
-  // Validar login com sistema de segurança
-  const result = validateLogin(username, password, captchaResponse);
+  try {
+    // 🔥 LOGIN NO FIREBASE AUTH
+    await firebase.auth().signInWithEmailAndPassword(username, password);
 
-  if (result.success) {
     // Login bem-sucedido
     sessionStorage.setItem("admin_logged_in", "true");
     showAdminPanel();
     showNotification("✅ Login realizado com sucesso!", "success");
+  } catch (error) {
+    // Erro no login
+    let errorMsg = "❌ Usuário ou senha incorretos!";
 
-    // Resetar CAPTCHA
-    if (typeof grecaptcha !== "undefined") {
-      grecaptcha.reset();
+    if (error.code === "auth/user-not-found") {
+      errorMsg = "❌ Usuário não encontrado!";
+    } else if (error.code === "auth/wrong-password") {
+      errorMsg = "❌ Senha incorreta!";
+    } else if (error.code === "auth/too-many-requests") {
+      errorMsg = "🚫 Muitas tentativas! Aguarde alguns minutos.";
+    } else if (error.code === "auth/invalid-email") {
+      errorMsg = "❌ Email inválido!";
     }
-  } else if (result.error === "locked") {
-    // Conta bloqueada
-    blockedMessage.style.display = "block";
-    errorMessage.style.display = "none";
 
-    // Countdown
-    let remaining = result.remainingTime;
-    const countdownEl = document.getElementById("countdown");
-
-    const interval = setInterval(() => {
-      remaining--;
-      countdownEl.textContent = remaining;
-
-      if (remaining <= 0) {
-        clearInterval(interval);
-        blockedMessage.style.display = "none";
-      }
-    }, 1000);
-  } else if (result.error === "captcha") {
-    // CAPTCHA não resolvido
-    showNotification("❌ Por favor, complete o CAPTCHA!", "error");
-  } else {
-    // Credenciais inválidas
-    errorMessage.textContent = `❌ Usuário ou senha incorretos! ${
-      result.remainingAttempts
-        ? `(${result.remainingAttempts} tentativas restantes)`
-        : ""
-    }`;
+    errorMessage.textContent = errorMsg;
     errorMessage.style.display = "block";
-    blockedMessage.style.display = "none";
 
-    // Resetar CAPTCHA
-    if (typeof grecaptcha !== "undefined") {
-      grecaptcha.reset();
-    }
+    devError("Erro no login:", error);
 
     setTimeout(() => {
       errorMessage.style.display = "none";
     }, 5000);
+  } finally {
+    // Reabilitar botão
+    submitButton.disabled = false;
+    submitButton.textContent = "Entrar";
   }
 }
 
-function handleLogout() {
-  sessionStorage.removeItem("admin_logged_in");
-  showLoginScreen();
-  showNotification("👋 Você saiu do sistema", "success");
+async function handleLogout() {
+  try {
+    await firebase.auth().signOut();
+    sessionStorage.removeItem("admin_logged_in");
+    showLoginScreen();
+    showNotification("👋 Você saiu do sistema", "success");
+  } catch (error) {
+    devError("Erro ao fazer logout:", error);
+    showNotification("❌ Erro ao sair do sistema", "error");
+  }
 }
 
 // ========================================
@@ -508,6 +516,30 @@ function getProducts() {
   return productsJSON ? JSON.parse(productsJSON) : [];
 }
 
+async function getProductsFromFirebase() {
+  // Tenta buscar do Firebase primeiro
+  if (window.FirebaseProductService && window.firebaseInitialized) {
+    try {
+      const fbProducts = await window.FirebaseProductService.getAll();
+      devLog(`🔥 Admin carregou ${fbProducts.length} produtos do Firebase`);
+      devLog("📦 Produtos do Firebase:", fbProducts);
+
+      // Sincroniza com LocalStorage
+      if (fbProducts.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(fbProducts));
+        return fbProducts;
+      }
+    } catch (error) {
+      devWarn("⚠️ Erro ao buscar do Firebase no admin:", error);
+    }
+  }
+
+  // Fallback para LocalStorage
+  const localProducts = getProducts();
+  devLog("📦 Produtos do LocalStorage:", localProducts);
+  return localProducts;
+}
+
 async function saveProducts(products) {
   // Salva no localStorage (backup)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
@@ -516,26 +548,40 @@ async function saveProducts(products) {
   if (window.FirebaseProductService && window.firebaseInitialized) {
     try {
       await window.FirebaseProductService.saveAll(products);
-      console.log("✅ Produtos salvos no Firebase!");
+      devLog("✅ Produtos salvos no Firebase!");
     } catch (error) {
-      console.error("❌ Erro ao salvar no Firebase:", error);
+      devError("❌ Erro ao salvar no Firebase:", error);
     }
   }
 }
 
 function loadProducts() {
-  const products = getProducts();
+  // Chama a versão assíncrona
+  loadProductsAsync();
+}
+
+async function loadProductsAsync() {
+  const products = await getProductsFromFirebase();
   const productsList = document.getElementById("products-list");
   const emptyMessage = document.getElementById("empty-message");
+  const btnImportInitial = document.getElementById("btn-import-initial");
 
   productsList.innerHTML = "";
 
   if (products.length === 0) {
     emptyMessage.style.display = "block";
     productsList.style.display = "none";
+    // Mostra botão de importar exemplos quando não há produtos
+    if (btnImportInitial) {
+      btnImportInitial.style.display = "inline-block";
+    }
   } else {
     emptyMessage.style.display = "none";
     productsList.style.display = "grid";
+    // Esconde botão quando há produtos
+    if (btnImportInitial) {
+      btnImportInitial.style.display = "none";
+    }
 
     products.forEach((product) => {
       const productItem = createProductItem(product);
@@ -593,8 +639,8 @@ function openAddProductModal() {
   document.getElementById("product-modal").style.display = "flex";
 }
 
-function editProduct(id) {
-  const products = getProducts();
+async function editProduct(id) {
+  const products = await getProductsFromFirebase();
   const product = products.find((p) => p.id === id);
 
   if (product) {
@@ -659,7 +705,7 @@ async function handleSaveProduct(e) {
         return;
       }
     } else if (id) {
-      const products = getProducts();
+      const products = await getProductsFromFirebase();
       const existingProduct = products.find((p) => p.id === id);
       imageBase64 = existingProduct ? existingProduct.image : "";
     }
@@ -676,18 +722,21 @@ async function handleSaveProduct(e) {
       createdAt: id ? undefined : new Date().toISOString(),
     };
 
-    let products = getProducts();
+    let products = await getProductsFromFirebase();
 
     if (id) {
-      products = products.map((p) => (p.id === id ? { ...p, ...product } : p));
+      // Ao editar, preserva o firebaseKey e outros campos importantes
+      products = products.map((p) =>
+        p.id === id ? { ...p, ...product, firebaseKey: p.firebaseKey } : p,
+      );
       showNotification("✅ Produto atualizado com sucesso!", "success");
     } else {
       products.push(product);
       showNotification("✅ Produto adicionado com sucesso!", "success");
     }
 
-    saveProducts(products);
-    loadProducts();
+    await saveProducts(products);
+    await loadProducts();
     closeModal();
   } finally {
     submitBtn.textContent = originalText;
@@ -697,10 +746,13 @@ async function handleSaveProduct(e) {
 
 async function toggleProductStatus(id) {
   try {
-    let products = await getProducts();
+    let products = await getProductsFromFirebase();
     const product = products.find((p) => p.id === id);
 
-    if (!product) return;
+    if (!product) {
+      showNotification("❌ Produto não encontrado!", "error");
+      return;
+    }
 
     const updatedProduct = {
       ...product,
@@ -708,21 +760,27 @@ async function toggleProductStatus(id) {
       status: !product.soldOut ? "sold-out" : "available",
     };
 
-    if (product.firebaseKey) {
-      await FirebaseProductService.update(product.firebaseKey, updatedProduct);
-    } else {
-      // Fallback para método antigo
-      products = products.map((p) => (p.id === id ? updatedProduct : p));
-      await saveProducts(products);
+    // Atualiza no array
+    products = products.map((p) => (p.id === id ? updatedProduct : p));
+
+    // Salva tudo no Firebase
+    if (window.FirebaseProductService && window.firebaseInitialized) {
+      const result = await window.FirebaseProductService.saveAll(products);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao salvar no Firebase");
+      }
     }
+
+    // Atualiza LocalStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
 
     await loadProducts();
 
     const status = updatedProduct.soldOut ? "esgotado" : "disponível";
     showNotification(`✅ Produto marcado como ${status}!`, "success");
   } catch (error) {
-    showNotification("❌ Erro ao atualizar status: " + error, "error");
-    console.error(error);
+    showNotification("❌ Erro ao atualizar status: " + error.message, "error");
+    devError("Erro ao atualizar status:", error);
   }
 }
 
@@ -733,22 +791,35 @@ async function deleteProduct(id) {
     )
   ) {
     try {
-      let products = await getProducts();
+      let products = await getProductsFromFirebase();
       const product = products.find((p) => p.id === id);
 
-      if (product && product.firebaseKey) {
-        await FirebaseProductService.remove(product.firebaseKey);
-      } else {
-        // Fallback para método antigo
-        products = products.filter((p) => p.id !== id);
-        await saveProducts(products);
+      if (!product) {
+        showNotification("❌ Produto não encontrado!", "error");
+        return;
       }
+
+      // Remove do array local
+      products = products.filter((p) => p.id !== id);
+
+      // Salva a nova lista no Firebase (sem o produto removido)
+      if (window.FirebaseProductService && window.firebaseInitialized) {
+        devLog(`🗑️ Salvando lista sem o produto ${id} no Firebase...`);
+        const result = await window.FirebaseProductService.saveAll(products);
+        if (!result.success) {
+          throw new Error(result.error || "Erro ao salvar no Firebase");
+        }
+      }
+
+      // Atualiza LocalStorage também
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      devLog(`🗑️ Produto removido do LocalStorage`);
 
       await loadProducts();
       showNotification("✅ Produto excluído com sucesso!", "success");
     } catch (error) {
-      showNotification("❌ Erro ao excluir produto: " + error, "error");
-      console.error(error);
+      showNotification("❌ Erro ao excluir produto: " + error.message, "error");
+      devError("Erro ao excluir produto:", error);
     }
   }
 }
@@ -756,7 +827,7 @@ async function deleteProduct(id) {
 async function filterProducts() {
   try {
     const selectedCategory = document.getElementById("filter-category").value;
-    const allProducts = await getProducts();
+    const allProducts = await getProductsFromFirebase();
 
     const filteredProducts =
       selectedCategory === "all"
@@ -776,7 +847,117 @@ async function filterProducts() {
       });
     }
   } catch (error) {
-    console.error("Erro ao filtrar produtos:", error);
+    devError("Erro ao filtrar produtos:", error);
+  }
+}
+
+// ========================================
+// SINCRONIZAÇÃO COM FIREBASE
+// ========================================
+async function syncAllToFirebase() {
+  const btn = document.getElementById("btn-sync-firebase");
+  const originalText = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = "🔄 Sincronizando...";
+
+  try {
+    if (!window.FirebaseProductService || !window.firebaseInitialized) {
+      throw new Error("Firebase não está inicializado!");
+    }
+
+    // Busca todos os produtos atuais do Firebase
+    const firebaseProducts = await window.FirebaseProductService.getAll();
+    const localProducts = getProducts();
+
+    devLog(
+      `📊 Firebase: ${firebaseProducts.length} produtos | LocalStorage: ${localProducts.length} produtos`,
+    );
+
+    // Se há produtos no LocalStorage mas não no Firebase, faz upload
+    if (localProducts.length > 0 && firebaseProducts.length === 0) {
+      devLog("📤 Enviando produtos do LocalStorage para o Firebase...");
+      await window.FirebaseProductService.saveAll(localProducts);
+      showNotification(
+        `✅ ${localProducts.length} produtos sincronizados com o Firebase!`,
+        "success",
+      );
+    }
+    // Se há produtos no Firebase, sincroniza com LocalStorage
+    else if (firebaseProducts.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseProducts));
+      showNotification(
+        `✅ ${firebaseProducts.length} produtos sincronizados do Firebase!`,
+        "success",
+      );
+    }
+    // Se ambos estão vazios, mantém vazio (produtos foram intencionalmente deletados)
+    else {
+      devLog("📭 Nenhum produto encontrado - mantendo catálogo vazio");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      showNotification(
+        "✅ Sincronização completa - catálogo está vazio",
+        "success",
+      );
+    }
+
+    await loadProducts();
+    await updateStats();
+  } catch (error) {
+    devError("Erro ao sincronizar:", error);
+    showNotification("❌ Erro ao sincronizar: " + error.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+// ========================================
+// IMPORTAÇÃO DE PRODUTOS INICIAIS
+// ========================================
+async function importInitialProducts() {
+  const btn = document.getElementById("btn-import-initial");
+  const originalText = btn.textContent;
+
+  if (
+    !confirm("⚠️ Isso vai adicionar produtos de exemplo ao catálogo. Confirma?")
+  ) {
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "📦 Importando...";
+
+  try {
+    if (!window.FirebaseProductService || !window.firebaseInitialized) {
+      throw new Error("Firebase não está inicializado!");
+    }
+
+    // Busca produtos atuais
+    const currentProducts = await getProductsFromFirebase();
+
+    // Adiciona produtos iniciais aos existentes
+    const allProducts = [...currentProducts, ...INITIAL_PRODUCTS];
+
+    // Salva no Firebase
+    await window.FirebaseProductService.saveAll(allProducts);
+
+    // Sincroniza LocalStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allProducts));
+
+    await loadProducts();
+    await updateStats();
+
+    showNotification(
+      `✅ ${INITIAL_PRODUCTS.length} produtos de exemplo importados!`,
+      "success",
+    );
+  } catch (error) {
+    devError("Erro ao importar produtos:", error);
+    showNotification("❌ Erro ao importar produtos: " + error.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
@@ -785,7 +966,7 @@ async function filterProducts() {
 // ========================================
 async function updateStats() {
   try {
-    const products = await getProducts();
+    const products = await getProductsFromFirebase();
     const available = products.filter((p) => !p.soldOut).length;
     const soldOut = products.filter((p) => p.soldOut).length;
 
@@ -793,7 +974,7 @@ async function updateStats() {
     document.getElementById("available-products").textContent = available;
     document.getElementById("sold-out-products").textContent = soldOut;
   } catch (error) {
-    console.error("Erro ao atualizar estatísticas:", error);
+    devError("Erro ao atualizar estatísticas:", error);
   }
 }
 

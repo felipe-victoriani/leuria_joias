@@ -8,7 +8,7 @@
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>"
     />
     <title>Painel Administrativo - OutLet MakeUp</title>
-    <link rel="stylesheet" href="admin.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
     <!-- Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <!-- EmailJS para envio de emails -->
@@ -17,7 +17,7 @@
   <body>
     <!-- TELA DE LOGIN -->
     <div id="login-screen" class="login-container">
-      <a href="index.html" class="btn-back-to-store">Voltar para Loja</a>
+      <a href="../index.html" class="btn-back-to-store">Voltar para Loja</a>
       <div class="login-box">
         <h1>🔐 Acesso Administrativo</h1>
         <p class="login-subtitle">OutLet MakeUp</p>
@@ -85,7 +85,7 @@
         <div class="admin-header-content">
           <h1>✨ Painel Administrativo</h1>
           <div class="admin-header-actions">
-            <a href="index.html" class="btn-back-store">🏪 Ir para Loja</a>
+            <a href="../index.html" class="btn-back-store">🏪 Ir para Loja</a>
             <span class="admin-user">👤 Administrador</span>
             <button id="btn-logout" class="btn-logout">Sair</button>
           </div>
@@ -123,6 +123,21 @@
         <div class="actions-bar">
           <button id="btn-add-product" class="btn-primary">
             ➕ Adicionar Novo Produto
+          </button>
+          <button
+            id="btn-sync-firebase"
+            class="btn-secondary"
+            title="Sincronizar todos os dados com o Firebase"
+          >
+            🔄 Sincronizar Firebase
+          </button>
+          <button
+            id="btn-import-initial"
+            class="btn-warning"
+            title="Importar produtos de exemplo (use apenas se quiser exemplos)"
+            style="display: none"
+          >
+            📦 Importar Exemplos
           </button>
           <div class="filter-group">
             <label for="filter-category">Filtrar por categoria:</label>
@@ -233,14 +248,15 @@
     <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <!-- Configuração do Firebase -->
-    <script src="firebase-config.js"></script>
+    <script src="../js/firebase-config.js"></script>
 
     <!-- Sistema de Segurança -->
-    <script src="admin-security.js"></script>
+    <script src="../js/admin-security.js"></script>
 
     <!-- Script do Admin -->
-    <script src="admin.js"></script>
+    <script src="../js/admin.js"></script>
   </body>
 </html>

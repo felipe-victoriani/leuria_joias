@@ -1,46 +1,8 @@
 /* ========================================
-   CONFIGURAÇÃO DO FIREBASE
-   
-   ⚠️ IMPORTANTE: Siga os passos abaixo para configurar
+   CONFIGURAÇÃO DO FIREBASE - OutLet MakeUp
 ======================================== */
 
-/**
- * PASSO A PASSO PARA CONFIGURAR O FIREBASE:
- *
- * 1. Acesse: https://console.firebase.google.com
- * 2. Clique em "Adicionar projeto" ou "Create a project"
- * 3. Dê um nome (ex: "andreza-store")
- * 4. Desabilite o Google Analytics (não é necessário)
- * 5. Clique em "Criar projeto"
- *
- * 6. No menu lateral, clique em "Realtime Database"
- * 7. Clique em "Criar banco de dados"
- * 8. Escolha a localização: "United States (us-central1)"
- * 9. Modo de segurança: Escolha "Modo de teste" (por enquanto)
- * 10. Clique em "Ativar"
- *
- * 11. Vá em "Regras" e cole isto:
- *     {
- *       "rules": {
- *         "products": {
- *           ".read": true,
- *           ".write": "auth != null"
- *         }
- *       }
- *     }
- * 12. Clique em "Publicar"
- *
- * 13. Volte para "Visão geral do projeto" (ícone de engrenagem → Configurações do projeto)
- * 14. Role até "Seus apps" e clique no ícone "</>" (Web)
- * 15. Dê um apelido (ex: "andreza-web")
- * 16. NÃO marque "Firebase Hosting"
- * 17. Clique em "Registrar app"
- *
- * 18. COPIE as configurações que aparecerem e COLE ABAIXO substituindo os valores de exemplo
- */
-
-// ⚠️ SUBSTITUA ESTAS CONFIGURAÇÕES PELAS SUAS DO FIREBASE
-//Your web app's Firebase configuration
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDmFDrG5ds2-GMpVGDR0spDfK_0-I51Tng",
   authDomain: "andreza-loja.firebaseapp.com",
@@ -52,6 +14,21 @@ const firebaseConfig = {
 };
 
 // ========================================
+// MODO DE DESENVOLVIMENTO
+// ========================================
+
+// Define se está em modo de desenvolvimento (console logs ativos)
+const DEV_MODE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.search.includes("debug=true");
+
+// Função de log condicional (só funciona em desenvolvimento)
+const devLog = DEV_MODE ? console.log.bind(console) : () => {};
+const devWarn = DEV_MODE ? console.warn.bind(console) : () => {};
+const devError = console.error.bind(console); // Erros sempre aparecem
+
+// ========================================
 // INICIALIZAÇÃO DO FIREBASE
 // ========================================
 
@@ -59,13 +36,13 @@ let database = null;
 let firebaseInitialized = false;
 
 /**
- * Inicializa o Firebase
+ * Inicializa o Firebase com App Check para segurança
  */
 function initFirebase() {
   try {
     // Verifica se o Firebase está disponível
     if (typeof firebase === "undefined") {
-      console.error(
+      devError(
         "❌ Firebase SDK não carregado. Verifique se os scripts estão no HTML.",
       );
       return false;
@@ -79,13 +56,28 @@ function initFirebase() {
     // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
     database = firebase.database();
+
+    // 🔒 SEGURANÇA: Firebase App Check (proteção contra abuso de API)
+    // Descomente as linhas abaixo após configurar App Check no Console Firebase
+    // Instruções em FIREBASE_SECURITY_GUIDE.md
+    /*
+    if (typeof firebase.appCheck !== 'undefined') {
+      const appCheck = firebase.appCheck();
+      appCheck.activate(
+        'SITE_KEY_AQUI', // Substitua pela sua Site Key do reCAPTCHA v3
+        true // Renovação automática de token
+      );
+      devLog("🔒 Firebase App Check ativado!");
+    }
+    */
+
     firebaseInitialized = true;
     window.firebaseInitialized = true; // Exporta globalmente
 
-    console.log("✅ Firebase inicializado com sucesso!");
+    devLog("✅ Firebase inicializado com sucesso!");
     return true;
   } catch (error) {
-    console.error("❌ Erro ao inicializar Firebase:", error);
+    devError("❌ Erro ao inicializar Firebase:", error);
     return false;
   }
 }
@@ -101,7 +93,7 @@ const FirebaseProductService = {
   async getAll() {
     try {
       if (!firebaseInitialized) {
-        console.warn("⚠️ Firebase não inicializado, usando fallback");
+        devWarn("⚠️ Firebase não inicializado, usando fallback");
         return [];
       }
 
@@ -116,7 +108,7 @@ const FirebaseProductService = {
         ...data[key],
       }));
     } catch (error) {
-      console.error("❌ Erro ao buscar produtos:", error);
+      devError("❌ Erro ao buscar produtos:", error);
       return [];
     }
   },
@@ -153,10 +145,10 @@ const FirebaseProductService = {
         updatedAt: Date.now(),
       });
 
-      console.log("✅ Produto adicionado com sucesso!");
+      devLog("✅ Produto adicionado com sucesso!");
       return { success: true, key: newRef.key };
     } catch (error) {
-      console.error("❌ Erro ao adicionar produto:", error);
+      devError("❌ Erro ao adicionar produto:", error);
       return { success: false, error: error.message };
     }
   },
@@ -175,10 +167,10 @@ const FirebaseProductService = {
         updatedAt: Date.now(),
       });
 
-      console.log("✅ Produto atualizado com sucesso!");
+      devLog("✅ Produto atualizado com sucesso!");
       return { success: true };
     } catch (error) {
-      console.error("❌ Erro ao atualizar produto:", error);
+      devError("❌ Erro ao atualizar produto:", error);
       return { success: false, error: error.message };
     }
   },
@@ -194,10 +186,10 @@ const FirebaseProductService = {
 
       await database.ref(`products/${firebaseKey}`).remove();
 
-      console.log("✅ Produto removido com sucesso!");
+      devLog("✅ Produto removido com sucesso!");
       return { success: true };
     } catch (error) {
-      console.error("❌ Erro ao remover produto:", error);
+      devError("❌ Erro ao remover produto:", error);
       return { success: false, error: error.message };
     }
   },
@@ -227,10 +219,10 @@ const FirebaseProductService = {
 
       await database.ref().update(updates);
 
-      console.log(`✅ ${products.length} produtos salvos com sucesso!`);
+      devLog(`✅ ${products.length} produtos salvos com sucesso!`);
       return { success: true };
     } catch (error) {
-      console.error("❌ Erro ao salvar produtos:", error);
+      devError("❌ Erro ao salvar produtos:", error);
       return { success: false, error: error.message };
     }
   },
@@ -250,20 +242,20 @@ async function migrateFromLocalStorage() {
       JSON.parse(localStorage.getItem("outlet_makeup_products")) || [];
 
     if (localProducts.length === 0) {
-      console.log("ℹ️ Nenhum produto no LocalStorage para migrar");
+      devLog("ℹ️ Nenhum produto no LocalStorage para migrar");
       return;
     }
 
-    console.log(`🔄 Migrando ${localProducts.length} produtos...`);
+    devLog(`🔄 Migrando ${localProducts.length} produtos...`);
 
     const result = await FirebaseProductService.saveAll(localProducts);
 
     if (result.success) {
-      console.log("✅ Migração concluída!");
-      console.log("💡 Você pode limpar o LocalStorage agora se quiser");
+      devLog("✅ Migração concluída!");
+      devLog("💡 Você pode limpar o LocalStorage agora se quiser");
     }
   } catch (error) {
-    console.error("❌ Erro na migração:", error);
+    devError("❌ Erro na migração:", error);
   }
 }
 

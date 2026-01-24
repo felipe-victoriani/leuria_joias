@@ -3,6 +3,17 @@
    Sistema completo de recuperação por email
 ======================================== */
 
+// Define se está em modo de desenvolvimento (console logs ativos)
+const DEV_MODE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.search.includes("debug=true");
+
+// Função de log condicional (só funciona em desenvolvimento)
+const devLog = DEV_MODE ? console.log.bind(console) : () => {};
+const devWarn = DEV_MODE ? console.warn.bind(console) : () => {};
+const devError = console.error.bind(console); // Erros sempre aparecem
+
 // ========================================
 // VARIÁVEIS GLOBAIS
 // ========================================
@@ -13,7 +24,7 @@ let generatedCode = "";
 // INICIALIZAÇÃO
 // ========================================
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("🔑 Sistema de recuperação de senha carregado!");
+  devLog("🔑 Sistema de recuperação de senha carregado!");
   setupEventListeners();
 });
 
@@ -80,7 +91,7 @@ async function handleRequestCode(e) {
   if (!storedEmail) {
     // Primeira vez - registrar email
     updateEmail(email);
-    console.log("📧 Email registrado:", email);
+    devLog("📧 Email registrado:", email);
   } else if (storedEmail !== email) {
     // Email não corresponde
     errorMsg.style.display = "block";
@@ -94,7 +105,7 @@ async function handleRequestCode(e) {
   userEmail = email;
   saveResetCode(generatedCode, email);
 
-  console.log("🔐 Código de recuperação gerado");
+  devLog("🔐 Código de recuperação gerado");
 
   // Tentar enviar email
   const result = await sendResetEmail(email, generatedCode);
@@ -181,11 +192,11 @@ async function handleResetPassword(e) {
     successMsg.style.display = "block";
     errorMsg.style.display = "none";
 
-    console.log("✅ Senha redefinida com sucesso!");
+    devLog("✅ Senha redefinida com sucesso!");
 
     // Redirecionar após 3 segundos
     setTimeout(() => {
-      window.location.href = "admin.html";
+      window.location.href = "../pages/admin.html";
     }, 3000);
   } else {
     // Código inválido
@@ -227,7 +238,7 @@ async function handleResendCode() {
     if (result.devMode) {
       const devCode = document.getElementById("dev-code");
       devCode.textContent = generatedCode;
-      console.log("🔐 Novo código:", generatedCode);
+      devLog("🔐 Novo código:", generatedCode);
     }
   } else {
     showTemporaryMessage("❌ Erro ao reenviar código", "error");
@@ -303,7 +314,5 @@ function showTemporaryMessage(message, type) {
 // ========================================
 // LOG DE INICIALIZAÇÃO
 // ========================================
-console.log("✅ Sistema de recuperação de senha pronto!");
-console.log(
-  "📧 Para envio real de emails, configure EmailJS em admin-security.js",
-);
+devLog("✅ Sistema de recuperação de senha pronto!");
+devLog("📧 Para envio real de emails, configure EmailJS em admin-security.js");

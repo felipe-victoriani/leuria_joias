@@ -4,6 +4,20 @@
 ======================================== */
 
 // ========================================
+// MODO DE DESENVOLVIMENTO
+// ========================================
+// Define se está em modo de desenvolvimento (console logs ativos)
+const DEV_MODE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.search.includes("debug=true");
+
+// Função de log condicional (só funciona em desenvolvimento)
+const devLog = DEV_MODE ? console.log.bind(console) : () => {};
+const devWarn = DEV_MODE ? console.warn.bind(console) : () => {};
+const devError = console.error.bind(console); // Erros sempre aparecem
+
+// ========================================
 // CONFIGURAÇÕES DE SEGURANÇA
 // ========================================
 const SECURITY_CONFIG = {
@@ -225,12 +239,14 @@ async function sendResetEmail(email, code) {
     typeof emailjs === "undefined"
   ) {
     // Modo desenvolvimento: mostrar código no console
-    console.log("=".repeat(50));
-    console.log("🔐 CÓDIGO DE RECUPERAÇÃO (MODO DESENVOLVIMENTO)");
-    console.log(`Email: ${email}`);
-    console.log(`Código: ${code}`);
-    console.log(`Válido por: 10 minutos`);
-    console.log("=".repeat(50));
+    if (DEV_MODE) {
+      devLog("=".repeat(50));
+      devLog("🔐 CÓDIGO DE RECUPERAÇÃO (MODO DESENVOLVIMENTO)");
+      devLog(`Email: ${email}`);
+      devLog(`Código: ${code}`);
+      devLog(`Válido por: 10 minutos`);
+      devLog("=".repeat(50));
+    }
 
     // Simular sucesso
     return { success: true, devMode: true };
@@ -250,7 +266,7 @@ async function sendResetEmail(email, code) {
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao enviar email:", error);
+    devError("Erro ao enviar email:", error);
     return { success: false, error: error.text };
   }
 }
@@ -260,4 +276,4 @@ async function sendResetEmail(email, code) {
 // ========================================
 initializeCredentials();
 
-console.log("✅ Sistema de segurança carregado!");
+devLog("✅ Sistema de segurança carregado!");

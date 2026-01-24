@@ -13,6 +13,8 @@
 // 1. CONFIGURAÇÃO
 // ========================================
 
+// DEV_MODE, devLog, devWarn e devError já foram definidos em firebase-config.js
+
 const CONFIG = {
   WHATSAPP_NUMBER: "5567996149130", // ⚠️ Alterar para o WhatsApp da loja
   STORAGE_KEY: "outlet_makeup_products",
@@ -52,23 +54,29 @@ const WhatsAppService = {
  */
 const ProductService = {
   async getAll() {
+    devLog("🔍 ProductService.getAll() chamado...");
     try {
       // Tenta buscar do Firebase primeiro
+      devLog(
+        `🔥 Verificando Firebase: window.FirebaseProductService = ${typeof window.FirebaseProductService}, window.firebaseInitialized = ${window.firebaseInitialized}`,
+      );
+
       if (window.FirebaseProductService && window.firebaseInitialized) {
+        devLog("🔥 Buscando produtos do Firebase...");
         const fbProducts = await window.FirebaseProductService.getAll();
-        console.log(`🔥 Carregados ${fbProducts.length} produtos do Firebase`);
+        devLog(`🔥 Carregados ${fbProducts.length} produtos do Firebase`);
         return fbProducts;
+      } else {
+        devWarn("⚠️ Firebase não disponível, pulando...");
       }
     } catch (error) {
-      console.warn("⚠️ Erro ao buscar do Firebase, usando LocalStorage", error);
+      devWarn("⚠️ Erro ao buscar do Firebase, usando LocalStorage", error);
     }
 
     // Fallback para LocalStorage
     const localProducts =
       JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-    console.log(
-      `💾 Carregados ${localProducts.length} produtos do LocalStorage`,
-    );
+    devLog(`💾 Carregados ${localProducts.length} produtos do LocalStorage`);
     return localProducts;
   },
 
@@ -220,7 +228,7 @@ async function loadDynamicProducts() {
       (p) => p.status === "available" && !p.soldOut,
     );
 
-    console.log(
+    devLog(
       `📦 ${products.length} produtos totais, ${availableProducts.length} disponíveis`,
     );
 
@@ -242,7 +250,7 @@ async function loadDynamicProducts() {
       await loadSexyShopProducts(availableProducts);
     }
   } catch (error) {
-    console.error("❌ Erro ao carregar produtos:", error);
+    devError("❌ Erro ao carregar produtos:", error);
   }
 }
 
@@ -287,13 +295,23 @@ function loadSexyShopProducts(products) {
 function loadProductsByCategory(products, category, gridId) {
   const categoryProducts = products.filter((p) => p.category === category);
 
-  if (categoryProducts.length === 0) return;
+  devLog(
+    `🔍 Carregando ${categoryProducts.length} produtos da categoria "${category}" no grid "${gridId}"`,
+  );
 
   const grid = document.getElementById(gridId);
-  if (!grid) return;
+  if (!grid) {
+    devWarn(`❌ Grid "${gridId}" não encontrado no DOM`);
+    return;
+  }
 
-  // Limpa produtos estáticos
-  grid.innerHTML = "";
+  // SEMPRE limpa produtos estáticos e mostra os do Firebase
+  // (mesmo que esteja vazio - isso reflete o estado real do Firebase)
+  grid.innerHTML = ""; // Limpa produtos estáticos
+
+  if (categoryProducts.length === 0) {
+    devLog(`⚠️ Nenhum produto encontrado para "${category}"`);
+  }
 
   categoryProducts.forEach((product) => {
     const card = ProductRenderer.createCard(product, false);
@@ -389,13 +407,20 @@ const ImageHelper = {
  * Inicialização principal da aplicação
  */
 document.addEventListener("DOMContentLoaded", async () => {
+  devLog("🚀 Iniciando carregamento da página...");
+
   // 0. Inicializar Firebase (se disponível)
   if (window.initFirebase) {
-    window.initFirebase();
+    const firebaseOk = window.initFirebase();
+    devLog(`🔥 Firebase inicializado: ${firebaseOk ? "SIM" : "NÃO"}`);
+  } else {
+    devWarn("⚠️ initFirebase não encontrado!");
   }
 
   // 1. Carregar produtos dinâmicos primeiro
+  devLog("📦 Iniciando carregamento de produtos...");
   await loadDynamicProducts();
+  devLog("✅ Produtos carregados!");
 
   // 2. Inicializar componentes de UI
   BuyController.init();
@@ -406,9 +431,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   ImageHelper.init();
 
   // 3. Log de sucesso
-  console.log("🌟 Andreza Store - Site carregado!");
+  devLog("🌟 Andreza Store - Site carregado!");
   const availableCount = (await ProductService.getAvailable()).length;
-  console.log("💡 Produtos disponíveis:", availableCount);
+  devLog("💡 Produtos disponíveis:", availableCount);
 });
 
 // Exportar funções globais (para compatibilidade)
@@ -541,15 +566,20 @@ const CartUIController = {
   },
 
   attachCartButtons() {
-    // Adicionar ao carrinho
+    // Remove listeners antigos e adiciona novos (evita duplicação)
     document.querySelectorAll(".btn-add-to-cart").forEach((button) => {
-      button.addEventListener("click", (e) => {
+      // Clona o botão para remover todos os event listeners
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+
+      // Adiciona o novo event listener
+      newButton.addEventListener("click", (e) => {
         const product = {
-          name: button.dataset.name,
-          price: button.dataset.price,
-          image: button.dataset.image,
+          name: newButton.dataset.name,
+          price: newButton.dataset.price,
+          image: newButton.dataset.image,
         };
-        this.addToCart(product, button);
+        this.addToCart(product, newButton);
       });
     });
   },
@@ -684,7 +714,16 @@ const CartUIController = {
     const cart = CartService.getCart();
 
     if (cart.length === 0) {
-      alert("Seu carrinho está vazio!");
+      // Cria uma notificação toast
+      const notification = document.createElement("div");
+      notification.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: #333; color: white; padding: 15px 25px; border-radius: 10px;
+        z-index: 10000; font-family: Arial, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      notification.textContent = "🛍️ Seu carrinho está vazio!";
+      document.body.appendChild(notification);
+      setTimeout(() => document.body.removeChild(notification), 2000);
       return;
     }
 
@@ -719,6 +758,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     CartUIController.init();
     window.CartUIController = CartUIController; // Exportar globalmente
-    console.log("🛒 Sistema de carrinho inicializado!");
+    devLog("🛒 Sistema de carrinho inicializado!");
   }, 100);
 });
