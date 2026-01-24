@@ -86,6 +86,22 @@ body {
   align-items: center;
 }
 
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  height: 50px;
+  width: 50px;
+  margin-right: 12px;
+  border-radius: 8px;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: contrast(1.1) brightness(1.05);
+}
+
 .logo h1 {
   font-size: 1.8rem;
   font-weight: 700;
