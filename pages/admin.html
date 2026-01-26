@@ -7,7 +7,7 @@
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>"
     />
-    <title>Painel Administrativo - OutLet MakeUp</title>
+    <title>Painel Administrativo - Léuria</title>
     <link rel="stylesheet" href="../css/admin.css" />
     <!-- Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -20,7 +20,7 @@
       <a href="../index.html" class="btn-back-to-store">Voltar para Loja</a>
       <div class="login-box">
         <h1>🔐 Acesso Administrativo</h1>
-        <p class="login-subtitle">OutLet MakeUp</p>
+        <p class="login-subtitle">Léuria - Bolsas & Acessórios</p>
 
         <form id="login-form" class="login-form">
           <div class="form-group">
@@ -83,7 +83,7 @@
       <!-- HEADER DO PAINEL -->
       <header class="admin-header">
         <div class="admin-header-content">
-          <h1>✨ Painel Administrativo</h1>
+          <h1>👜 Painel Administrativo - Léuria</h1>
           <div class="admin-header-actions">
             <a href="../index.html" class="btn-back-store">🏪 Ir para Loja</a>
             <span class="admin-user">👤 Administrador</span>
@@ -97,154 +97,147 @@
         <!-- ESTATÍSTICAS -->
         <div class="stats-container">
           <div class="stat-card">
-            <div class="stat-icon">📦</div>
+            <div class="stat-icon">👜</div>
             <div class="stat-info">
-              <h3 id="total-products">0</h3>
-              <p>Total de Produtos</p>
+              <h3>Bolsas</h3>
+              <p class="stat-number" id="bags-count">0</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">✅</div>
+            <div class="stat-icon">✨</div>
             <div class="stat-info">
-              <h3 id="available-products">0</h3>
-              <p>Disponíveis</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">❌</div>
-            <div class="stat-info">
-              <h3 id="sold-out-products">0</h3>
-              <p>Esgotados</p>
+              <h3>Acessórios</h3>
+              <p class="stat-number" id="accessories-count">0</p>
             </div>
           </div>
         </div>
 
-        <!-- AÇÕES PRINCIPAIS -->
-        <div class="actions-bar">
-          <button id="btn-add-product" class="btn-primary">
-            ➕ Adicionar Novo Produto
+        <!-- NAVEGAÇÃO DAS CATEGORIAS -->
+        <div class="category-tabs">
+          <button class="tab-btn active" data-category="bolsas">
+            👜 Bolsas
           </button>
-          <button
-            id="btn-sync-firebase"
-            class="btn-secondary"
-            title="Sincronizar todos os dados com o Firebase"
-          >
-            🔄 Sincronizar Firebase
+          <button class="tab-btn" data-category="acessorios">
+            ✨ Acessórios
           </button>
-          <button
-            id="btn-import-initial"
-            class="btn-warning"
-            title="Importar produtos de exemplo (use apenas se quiser exemplos)"
-            style="display: none"
-          >
-            📦 Importar Exemplos
-          </button>
-          <div class="filter-group">
-            <label for="filter-category">Filtrar por categoria:</label>
-            <select id="filter-category" class="filter-select">
-              <option value="all">Todas as Categorias</option>
-              <option value="maquiagem">Maquiagens</option>
-              <option value="pijama">Pijamas</option>
-              <option value="sexy-shop">Sexy Shop</option>
-            </select>
-          </div>
         </div>
 
-        <!-- LISTA DE PRODUTOS -->
-        <div class="products-container">
-          <h2>📋 Produtos Cadastrados</h2>
-          <div id="products-list" class="products-list">
-            <!-- Produtos serão inseridos aqui pelo JavaScript -->
+        <!-- GERENCIAMENTO DE PRODUTOS -->
+        <div class="products-management">
+          <div class="products-header">
+            <h2 id="category-title">👜 Gerenciar Bolsas</h2>
+            <button id="btn-add-product" class="btn-add-product">
+              ➕ Adicionar Produto
+            </button>
           </div>
-          <div id="empty-message" class="empty-message" style="display: none">
-            📭 Nenhum produto cadastrado ainda.<br />
-            Clique em "Adicionar Novo Produto" para começar!
+
+          <div class="products-grid" id="admin-products-grid">
+            <!-- Produtos serão carregados aqui via JavaScript -->
           </div>
         </div>
       </main>
     </div>
 
-    <!-- MODAL DE CADASTRO/EDIÇÃO DE PRODUTO -->
+    <!-- MODAL PARA ADICIONAR/EDITAR PRODUTO -->
     <div id="product-modal" class="modal" style="display: none">
+      <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
           <h2 id="modal-title">➕ Adicionar Produto</h2>
-          <button id="btn-close-modal" class="btn-close-modal">&times;</button>
+          <button id="close-modal" class="close-modal">✕</button>
         </div>
 
         <form id="product-form" class="product-form">
-          <input type="hidden" id="product-id" />
-
           <div class="form-group">
-            <label for="product-name">Nome do Produto: *</label>
+            <label for="product-name">Nome do Produto:</label>
             <input
               type="text"
               id="product-name"
-              placeholder="Ex: Batom Vermelho Matte"
               required
+              placeholder="Ex: Bolsa Clássica Elegante"
             />
-            <small>Digite o nome completo do produto</small>
           </div>
 
           <div class="form-group">
-            <label for="product-category">Categoria: *</label>
+            <label for="product-price">Preço (R$):</label>
+            <input
+              type="number"
+              id="product-price"
+              step="0.01"
+              min="0"
+              required
+              placeholder="Ex: 89.90"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="product-category">Categoria:</label>
             <select id="product-category" required>
               <option value="">Selecione uma categoria</option>
-              <option value="maquiagem">💄 Maquiagens</option>
-              <option value="pijama">👘 Pijamas</option>
-              <option value="sexy-shop">🔥 Sexy Shop</option>
+              <option value="bolsas">👜 Bolsas</option>
+              <option value="acessorios">✨ Acessórios</option>
             </select>
-            <small>Escolha em qual seção o produto aparecerá</small>
           </div>
 
           <div class="form-group">
-            <label for="product-price">Preço: *</label>
+            <label for="product-description">Descrição:</label>
+            <textarea
+              id="product-description"
+              rows="3"
+              placeholder="Descreva o produto..."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="product-image">URL da Imagem:</label>
             <input
-              type="text"
-              id="product-price"
-              placeholder="Ex: 49.90 ou 49,90"
-              pattern="^\d+([.,]\d{2})?$"
-              title="Digite apenas números e vírgula/ponto (ex: 49.90)"
-              required
+              type="url"
+              id="product-image"
+              placeholder="https://exemplo.com/imagem.jpg"
             />
-            <small>Digite apenas números e vírgula (ex: 49,90)</small>
-          </div>
-
-          <div class="form-group">
-            <label for="product-image">Imagem do Produto: *</label>
-            <input type="file" id="product-image" accept="image/*" required />
-            <small
-              >Escolha uma imagem do seu computador (JPG, PNG ou GIF)</small
-            >
-            <div id="image-preview" class="image-preview" style="display: none">
-              <img id="preview-img" src="" alt="Preview" />
-            </div>
-          </div>
-
-          <div class="form-group-checkbox">
-            <input type="checkbox" id="product-sold-out" />
-            <label for="product-sold-out">
-              <strong>❌ Produto Esgotado</strong>
-              <small
-                >Marque esta opção se o produto não estiver disponível no
-                momento</small
-              >
-            </label>
           </div>
 
           <div class="form-actions">
-            <button type="button" id="btn-cancel" class="btn-secondary">
+            <button type="button" id="cancel-product" class="btn-cancel">
               Cancelar
             </button>
-            <button type="submit" class="btn-primary">💾 Salvar Produto</button>
+            <button type="submit" class="btn-save">💾 Salvar Produto</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- NOTIFICAÇÃO -->
-    <div id="notification" class="notification" style="display: none"></div>
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div id="confirm-modal" class="modal" style="display: none">
+      <div class="modal-overlay"></div>
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h2>⚠️ Confirmar Ação</h2>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-message">
+            Tem certeza que deseja excluir este produto?
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-action" class="btn-cancel">Cancelar</button>
+          <button id="confirm-action" class="btn-danger">Confirmar</button>
+        </div>
+      </div>
+    </div>
 
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Carregando...</p>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- JavaScript -->
     <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -253,10 +246,10 @@
     <!-- Configuração do Firebase -->
     <script src="../js/firebase-config.js"></script>
 
-    <!-- Sistema de Segurança -->
+    <!-- Scripts do Admin -->
     <script src="../js/admin-security.js"></script>
 
-    <!-- Script do Admin -->
+    <!-- Script principal do Admin -->
     <script src="../js/admin.js"></script>
   </body>
 </html>

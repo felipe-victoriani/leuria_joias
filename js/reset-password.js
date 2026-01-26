@@ -1,318 +1,338 @@
-/* ========================================
-   LÓGICA DE RECUPERAÇÃO DE SENHA
-   Sistema completo de recuperação por email
-======================================== */
+// ===== RESET PASSWORD - LÉURIA =====
 
-// Define se está em modo de desenvolvimento (console logs ativos)
-const DEV_MODE =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1" ||
-  window.location.search.includes("debug=true");
+// Configurações do EmailJS
+const EMAIL_CONFIG = {
+  SERVICE_ID: "your_service_id", // Substituir pelo ID do serviço EmailJS
+  TEMPLATE_ID: "your_template_id", // Substituir pelo ID do template EmailJS
+  USER_ID: "your_user_id", // Substituir pelo User ID do EmailJS
+};
 
-// Função de log condicional (só funciona em desenvolvimento)
-const devLog = DEV_MODE ? console.log.bind(console) : () => {};
-const devWarn = DEV_MODE ? console.warn.bind(console) : () => {};
-const devError = console.error.bind(console); // Erros sempre aparecem
+// Estado da aplicação
+let resetState = {
+  isLoading: false,
+  emailInitialized: false,
+};
 
-// ========================================
-// VARIÁVEIS GLOBAIS
-// ========================================
-let userEmail = "";
-let generatedCode = "";
-
-// ========================================
-// INICIALIZAÇÃO
-// ========================================
+// ===== INICIALIZAÇÃO =====
 document.addEventListener("DOMContentLoaded", function () {
-  devLog("🔑 Sistema de recuperação de senha carregado!");
+  console.log("🔑 Sistema de reset de senha inicializando...");
+
+  // Inicializar EmailJS
+  initializeEmailJS();
+
+  // Configurar eventos
   setupEventListeners();
+
+  console.log("✅ Sistema de reset de senha inicializado");
 });
 
-// ========================================
-// EVENT LISTENERS
-// ========================================
+// ===== INICIALIZAR EMAILJS =====
+function initializeEmailJS() {
+  try {
+    // Inicializar EmailJS (substitua pela sua chave pública)
+    emailjs.init("your_public_key");
+    resetState.emailInitialized = true;
+    console.log("✅ EmailJS inicializado com sucesso");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar EmailJS:", error);
+    resetState.emailInitialized = false;
+  }
+}
+
+// ===== CONFIGURAR EVENT LISTENERS =====
 function setupEventListeners() {
-  // Formulário de solicitação de código
-  const requestForm = document.getElementById("request-code-form");
-  if (requestForm) {
-    requestForm.addEventListener("submit", handleRequestCode);
-  }
+  const resetForm = document.getElementById("reset-form");
 
-  // Formulário de redefinição de senha
-  const resetForm = document.getElementById("reset-password-form");
   if (resetForm) {
-    resetForm.addEventListener("submit", handleResetPassword);
+    resetForm.addEventListener("submit", handleResetSubmit);
   }
 
-  // Botão de reenviar código
-  const resendBtn = document.getElementById("resend-code");
-  if (resendBtn) {
-    resendBtn.addEventListener("click", handleResendCode);
+  // Validação em tempo real
+  const requesterName = document.getElementById("requester-name");
+  const requesterEmail = document.getElementById("requester-email");
+  const justification = document.getElementById("justification");
+
+  if (requesterName) {
+    requesterName.addEventListener("input", validateName);
   }
 
-  // Verificar força da senha em tempo real
-  const newPasswordInput = document.getElementById("new-password");
-  if (newPasswordInput) {
-    newPasswordInput.addEventListener("input", checkPasswordStrength);
+  if (requesterEmail) {
+    requesterEmail.addEventListener("input", validateEmail);
   }
 
-  // Validar código em tempo real (apenas números)
-  const codeInput = document.getElementById("code");
-  if (codeInput) {
-    codeInput.addEventListener("input", function (e) {
-      e.target.value = e.target.value.replace(/[^0-9]/g, "");
-    });
+  if (justification) {
+    justification.addEventListener("input", validateJustification);
   }
 }
 
-// ========================================
-// PASSO 1: SOLICITAR CÓDIGO
-// ========================================
-async function handleRequestCode(e) {
-  e.preventDefault();
+// ===== VALIDAÇÕES =====
+function validateName(event) {
+  const name = event.target.value.trim();
+  const isValid = name.length >= 2;
 
-  const emailInput = document.getElementById("email");
-  const email = emailInput.value.trim();
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  const errorMsg = document.getElementById("email-error");
-  const successMsg = document.getElementById("email-success");
+  updateFieldValidation(
+    event.target,
+    isValid,
+    "Nome deve ter pelo menos 2 caracteres",
+  );
+  return isValid;
+}
 
-  // Desabilitar botão durante processamento
-  submitBtn.disabled = true;
-  submitBtn.textContent = "⏳ Enviando...";
+function validateEmail(event) {
+  const email = event.target.value.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isValid = emailRegex.test(email);
 
-  // Limpar mensagens anteriores
-  errorMsg.style.display = "none";
-  successMsg.style.display = "none";
+  updateFieldValidation(event.target, isValid, "Digite um e-mail válido");
+  return isValid;
+}
 
-  // Verificar se o email está cadastrado
-  const storedEmail = getStoredEmail();
+function validateJustification(event) {
+  const justification = event.target.value.trim();
+  const isValid = justification.length >= 20;
 
-  if (!storedEmail) {
-    // Primeira vez - registrar email
-    updateEmail(email);
-    devLog("📧 Email registrado:", email);
-  } else if (storedEmail !== email) {
-    // Email não corresponde
-    errorMsg.style.display = "block";
-    submitBtn.disabled = false;
-    submitBtn.textContent = "📨 Enviar Código";
+  updateFieldValidation(
+    event.target,
+    isValid,
+    "Justificativa deve ter pelo menos 20 caracteres",
+  );
+  return isValid;
+}
+
+function updateFieldValidation(field, isValid, errorMessage) {
+  // Remove mensagens de erro existentes
+  const existingError = field.parentNode.querySelector(".field-error");
+  if (existingError) {
+    existingError.remove();
+  }
+
+  // Atualiza estilo do campo
+  if (isValid) {
+    field.style.borderColor = "#4caf50";
+  } else if (field.value.length > 0) {
+    field.style.borderColor = "#ff6b6b";
+
+    // Adiciona mensagem de erro
+    const errorElement = document.createElement("div");
+    errorElement.className = "field-error";
+    errorElement.style.cssText = `
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      margin-top: 5px;
+      font-weight: 500;
+    `;
+    errorElement.textContent = errorMessage;
+    field.parentNode.appendChild(errorElement);
+  } else {
+    field.style.borderColor = "";
+  }
+}
+
+// ===== MANIPULAR SUBMISSÃO DO FORMULÁRIO =====
+function handleResetSubmit(event) {
+  event.preventDefault();
+
+  if (resetState.isLoading) return;
+
+  // Coletar dados do formulário
+  const formData = {
+    adminEmail: document.getElementById("admin-email").value.trim(),
+    requesterName: document.getElementById("requester-name").value.trim(),
+    requesterEmail: document.getElementById("requester-email").value.trim(),
+    justification: document.getElementById("justification").value.trim(),
+  };
+
+  // Validar dados
+  if (!validateFormData(formData)) {
     return;
   }
 
-  // Gerar código de recuperação
-  generatedCode = generateResetCode();
-  userEmail = email;
-  saveResetCode(generatedCode, email);
-
-  devLog("🔐 Código de recuperação gerado");
-
-  // Tentar enviar email
-  const result = await sendResetEmail(email, generatedCode);
-
-  if (result.success) {
-    successMsg.style.display = "block";
-
-    if (result.devMode) {
-      // Modo desenvolvimento - mostrar código
-      const devMode = document.getElementById("dev-mode");
-      const devCode = document.getElementById("dev-code");
-
-      devCode.textContent = generatedCode;
-      devMode.style.display = "block";
-
-      successMsg.innerHTML = `
-        ✅ Modo Desenvolvimento Ativado!<br>
-        <strong>Código: ${generatedCode}</strong><br>
-        <small>Em produção, seria enviado por email</small>
-      `;
-    }
-
-    // Ir para próxima etapa após 2 segundos
-    setTimeout(() => {
-      goToStep2();
-    }, 2000);
-  } else {
-    errorMsg.textContent = `❌ Erro ao enviar email: ${result.error || "Desconhecido"}`;
-    errorMsg.style.display = "block";
-  }
-
-  submitBtn.disabled = false;
-  submitBtn.textContent = "📨 Enviar Código";
+  // Enviar solicitação
+  sendResetRequest(formData);
 }
 
-// ========================================
-// PASSO 2: REDEFINIR SENHA
-// ========================================
-async function handleResetPassword(e) {
-  e.preventDefault();
+// ===== VALIDAR DADOS DO FORMULÁRIO =====
+function validateFormData(data) {
+  const errors = [];
 
-  const codeInput = document.getElementById("code");
-  const newPasswordInput = document.getElementById("new-password");
-  const confirmPasswordInput = document.getElementById("confirm-password");
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  const errorMsg = document.getElementById("reset-error");
-  const successMsg = document.getElementById("reset-success");
-
-  const code = codeInput.value.trim();
-  const newPassword = newPasswordInput.value;
-  const confirmPassword = confirmPasswordInput.value;
-
-  // Limpar mensagens
-  errorMsg.style.display = "none";
-  successMsg.style.display = "none";
-
-  // Validar senhas
-  if (newPassword !== confirmPassword) {
-    errorMsg.textContent = "❌ As senhas não coincidem!";
-    errorMsg.style.display = "block";
-    confirmPasswordInput.focus();
-    return;
+  // Validar nome
+  if (!data.requesterName || data.requesterName.length < 2) {
+    errors.push("Nome deve ter pelo menos 2 caracteres");
   }
 
-  if (newPassword.length < 6) {
-    errorMsg.textContent = "❌ A senha deve ter no mínimo 6 caracteres!";
-    errorMsg.style.display = "block";
-    newPasswordInput.focus();
-    return;
+  // Validar e-mail
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!data.requesterEmail || !emailRegex.test(data.requesterEmail)) {
+    errors.push("E-mail inválido");
   }
 
-  // Desabilitar botão
-  submitBtn.disabled = true;
-  submitBtn.textContent = "⏳ Redefinindo...";
-
-  // Verificar código
-  const result = verifyResetCode(code);
-
-  if (result.valid) {
-    // Atualizar senha
-    updatePassword(newPassword);
-
-    // Mostrar sucesso
-    successMsg.style.display = "block";
-    errorMsg.style.display = "none";
-
-    devLog("✅ Senha redefinida com sucesso!");
-
-    // Redirecionar após 3 segundos
-    setTimeout(() => {
-      window.location.href = "../pages/admin.html";
-    }, 3000);
-  } else {
-    // Código inválido
-    const messages = {
-      invalid: "❌ Código incorreto! Verifique e tente novamente.",
-      expired: "❌ Código expirado! Solicite um novo código.",
-      no_code: "❌ Nenhum código encontrado. Solicite um novo código.",
-    };
-
-    errorMsg.textContent = messages[result.error] || "❌ Erro desconhecido!";
-    errorMsg.style.display = "block";
-    codeInput.focus();
-
-    submitBtn.disabled = false;
-    submitBtn.textContent = "🔐 Redefinir Senha";
+  // Validar justificativa
+  if (!data.justification || data.justification.length < 20) {
+    errors.push("Justificativa deve ter pelo menos 20 caracteres");
   }
+
+  // Mostrar erros se houver
+  if (errors.length > 0) {
+    showError(errors.join("\n"));
+    return false;
+  }
+
+  return true;
 }
 
-// ========================================
-// REENVIAR CÓDIGO
-// ========================================
-async function handleResendCode() {
-  const resendBtn = document.getElementById("resend-code");
-  const originalText = resendBtn.textContent;
+// ===== ENVIAR SOLICITAÇÃO DE RESET =====
+function sendResetRequest(data) {
+  showLoading(true);
 
-  resendBtn.disabled = true;
-  resendBtn.textContent = "⏳ Reenviando...";
+  // Preparar dados para o email
+  const emailData = {
+    to_email: data.adminEmail,
+    from_name: data.requesterName,
+    from_email: data.requesterEmail,
+    subject: "Solicitação de Redefinição de Senha - Léuria Admin",
+    message: `
+      SOLICITAÇÃO DE REDEFINIÇÃO DE SENHA
+      
+      Nome do Solicitante: ${data.requesterName}
+      E-mail do Solicitante: ${data.requesterEmail}
+      Data da Solicitação: ${new Date().toLocaleString("pt-BR")}
+      
+      JUSTIFICATIVA:
+      ${data.justification}
+      
+      ========================================
+      
+      Esta solicitação foi enviada automaticamente pelo sistema de segurança da Léuria.
+      Por favor, entre em contato com o solicitante para verificar a identidade antes de proceder.
+    `,
+    reply_to: data.requesterEmail,
+  };
 
-  // Gerar novo código
-  generatedCode = generateResetCode();
-  saveResetCode(generatedCode, userEmail);
-
-  // Enviar email
-  const result = await sendResetEmail(userEmail, generatedCode);
-
-  if (result.success) {
-    showTemporaryMessage("✅ Código reenviado com sucesso!", "success");
-
-    if (result.devMode) {
-      const devCode = document.getElementById("dev-code");
-      devCode.textContent = generatedCode;
-      devLog("🔐 Novo código:", generatedCode);
-    }
-  } else {
-    showTemporaryMessage("❌ Erro ao reenviar código", "error");
-  }
-
-  resendBtn.disabled = false;
-  resendBtn.textContent = originalText;
-}
-
-// ========================================
-// NAVEGAÇÃO ENTRE ETAPAS
-// ========================================
-function goToStep2() {
-  document.getElementById("step-1").classList.remove("active");
-  document.getElementById("step-2").classList.add("active");
-
-  // Atualizar display de email
-  document.getElementById("email-display").textContent = userEmail;
-
-  // Focar no campo de código
-  document.getElementById("code").focus();
-}
-
-// ========================================
-// VERIFICAR FORÇA DA SENHA
-// ========================================
-function checkPasswordStrength(e) {
-  const password = e.target.value;
-  const strengthBar = document.getElementById("password-strength");
-
-  if (!password) {
-    strengthBar.className = "password-strength";
-    return;
-  }
-
-  let strength = 0;
-
-  // Critérios de força
-  if (password.length >= 6) strength++;
-  if (password.length >= 10) strength++;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-  if (/[0-9]/.test(password)) strength++;
-  if (/[^a-zA-Z0-9]/.test(password)) strength++;
-
-  // Aplicar classe
-  if (strength <= 2) {
-    strengthBar.className = "password-strength weak";
-  } else if (strength <= 4) {
-    strengthBar.className = "password-strength medium";
-  } else {
-    strengthBar.className = "password-strength strong";
-  }
-}
-
-// ========================================
-// UTILITÁRIOS
-// ========================================
-function showTemporaryMessage(message, type) {
-  const container = document.querySelector(".step.active");
-  const messageDiv = document.createElement("div");
-  messageDiv.className =
-    type === "success" ? "success-message" : "error-message";
-  messageDiv.textContent = message;
-  messageDiv.style.marginTop = "1rem";
-
-  container.appendChild(messageDiv);
-
+  // Simular envio (substitua pela integração real com EmailJS)
   setTimeout(() => {
-    messageDiv.remove();
-  }, 3000);
+    // Em produção, use:
+    // emailjs.send(EMAIL_CONFIG.SERVICE_ID, EMAIL_CONFIG.TEMPLATE_ID, emailData, EMAIL_CONFIG.USER_ID)
+
+    const success = Math.random() > 0.1; // 90% de chance de sucesso para demo
+
+    if (success) {
+      handleResetSuccess();
+
+      // Log da solicitação
+      logResetRequest(data);
+    } else {
+      handleResetError("Erro no serviço de e-mail. Tente novamente.");
+    }
+
+    showLoading(false);
+  }, 2000);
 }
 
-// ========================================
-// LOG DE INICIALIZAÇÃO
-// ========================================
-devLog("✅ Sistema de recuperação de senha pronto!");
-devLog("📧 Para envio real de emails, configure EmailJS em admin-security.js");
+// ===== SUCESSO NO ENVIO =====
+function handleResetSuccess() {
+  console.log("✅ Solicitação de reset enviada com sucesso");
+
+  // Esconder formulário e mostrar mensagem de sucesso
+  document.getElementById("reset-form-container").style.display = "none";
+  document.getElementById("success-message").style.display = "block";
+
+  // Scroll para o topo
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ===== ERRO NO ENVIO =====
+function handleResetError(errorMessage) {
+  console.error("❌ Erro ao enviar solicitação:", errorMessage);
+
+  // Esconder formulário e mostrar mensagem de erro
+  document.getElementById("reset-form-container").style.display = "none";
+  document.getElementById("error-message").style.display = "block";
+
+  // Atualizar mensagem de erro específica se fornecida
+  const errorText = document.getElementById("error-text");
+  if (errorText && errorMessage) {
+    errorText.textContent = errorMessage;
+  }
+
+  // Scroll para o topo
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ===== RESETAR FORMULÁRIO =====
+function resetForm() {
+  // Mostrar formulário e esconder mensagens
+  document.getElementById("reset-form-container").style.display = "block";
+  document.getElementById("success-message").style.display = "none";
+  document.getElementById("error-message").style.display = "none";
+
+  // Limpar campos (exceto admin email)
+  document.getElementById("requester-name").value = "";
+  document.getElementById("requester-email").value = "";
+  document.getElementById("justification").value = "";
+
+  // Remover validações visuais
+  document.querySelectorAll(".field-error").forEach((error) => error.remove());
+  document.querySelectorAll("input, textarea").forEach((field) => {
+    field.style.borderColor = "";
+  });
+
+  // Focar no primeiro campo
+  document.getElementById("requester-name").focus();
+
+  console.log("🔄 Formulário resetado");
+}
+
+// ===== LOADING =====
+function showLoading(show) {
+  const overlay = document.getElementById("loading-overlay");
+  const submitBtn = document.getElementById("btn-send-request");
+
+  resetState.isLoading = show;
+
+  if (overlay) {
+    overlay.style.display = show ? "flex" : "none";
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = show;
+    submitBtn.textContent = show ? "⏳ Enviando..." : "📧 Enviar Solicitação";
+  }
+}
+
+// ===== MOSTRAR ERRO =====
+function showError(message) {
+  alert(`❌ ${message}`);
+  console.error("Erro de validação:", message);
+}
+
+// ===== LOG DE SOLICITAÇÃO =====
+function logResetRequest(data) {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    requesterName: data.requesterName,
+    requesterEmail: data.requesterEmail,
+    userAgent: navigator.userAgent,
+    ip: "hidden", // Em produção, capturar IP no backend
+    justificationLength: data.justification.length,
+  };
+
+  console.log("📋 Solicitação de reset registrada:", logEntry);
+
+  // Em produção, enviar para sistema de auditoria
+  // sendToAuditLog('PASSWORD_RESET_REQUEST', logEntry);
+}
+
+// ===== UTILITÁRIOS =====
+function formatDate(date) {
+  return new Date(date).toLocaleString("pt-BR");
+}
+
+function sanitizeInput(input) {
+  return input.replace(/[<>\"']/g, "");
+}
+
+// ===== EXPORTAR FUNÇÕES GLOBAIS =====
+window.resetForm = resetForm;
+
+// ===== LOG DE INICIALIZAÇÃO =====
+console.log("🔑 Sistema de reset de senha carregado para Léuria");

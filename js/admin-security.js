@@ -1,279 +1,440 @@
-/* ========================================
-   SISTEMA DE SEGURANÇA DO ADMIN
-   Proteção avançada com CAPTCHA e recuperação de senha
-======================================== */
+// ===== SEGURANÇA DO PAINEL ADMINISTRATIVO - LÉURIA =====
 
-// ========================================
-// MODO DE DESENVOLVIMENTO
-// ========================================
-// Define se está em modo de desenvolvimento (console logs ativos)
-const DEV_MODE =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1" ||
-  window.location.search.includes("debug=true");
-
-// Função de log condicional (só funciona em desenvolvimento)
-const devLog = DEV_MODE ? console.log.bind(console) : () => {};
-const devWarn = DEV_MODE ? console.warn.bind(console) : () => {};
-const devError = console.error.bind(console); // Erros sempre aparecem
-
-// ========================================
-// CONFIGURAÇÕES DE SEGURANÇA
-// ========================================
+// Configurações de segurança
 const SECURITY_CONFIG = {
-  maxLoginAttempts: 3,
-  lockoutDuration: 60000, // 60 segundos
-  resetCodeExpiration: 10 * 60 * 1000, // 10 minutos
-  emailjs: {
-    serviceId: "SEU_SERVICE_ID", // Configurar em emailjs.com
-    templateId: "SEU_TEMPLATE_ID",
-    publicKey: "SUA_PUBLIC_KEY",
+  MAX_LOGIN_ATTEMPTS: 3,
+  LOCKOUT_DURATION: 60000, // 60 segundos
+  SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutos
+
+  // Credenciais de admin (em produção, use Firebase Auth)
+  ADMIN_CREDENTIALS: {
+    username: "admin",
+    password: "leuria2026",
   },
 };
 
-// ========================================
-// CREDENCIAIS E ARMAZENAMENTO
-// ========================================
-const STORAGE_KEYS = {
-  credentials: "outlet_admin_credentials",
-  loginAttempts: "outlet_login_attempts",
-  lockoutUntil: "outlet_lockout_until",
-  resetCode: "outlet_reset_code",
+// Estado de segurança
+let securityState = {
+  loginAttempts: 0,
+  isLocked: false,
+  lockoutTimer: null,
+  sessionTimer: null,
+  isAuthenticated: false,
 };
 
-// Senha padrão (hash simples para demonstração - em produção use bcrypt/SHA-256)
-function hashPassword(password) {
-  // Hash simples (em produção, use uma biblioteca de hashing real)
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(36);
-}
+// ===== INICIALIZAÇÃO =====
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("🔐 Sistema de segurança do admin inicializando...");
 
-// Inicializar credenciais padrão
-function initializeCredentials() {
-  const stored = localStorage.getItem(STORAGE_KEYS.credentials);
-  if (!stored) {
-    const defaultCredentials = {
-      username: "admin",
-      passwordHash: hashPassword("admin123"),
-      email: "", // Será solicitado na primeira recuperação
-    };
-    localStorage.setItem(
-      STORAGE_KEYS.credentials,
-      JSON.stringify(defaultCredentials),
-    );
-  }
-}
+  // Verificar se já está autenticado
+  checkExistingSession();
 
-// ========================================
-// SISTEMA DE TENTATIVAS DE LOGIN
-// ========================================
-function getLoginAttempts() {
-  const attempts = localStorage.getItem(STORAGE_KEYS.loginAttempts);
-  return attempts ? parseInt(attempts) : 0;
-}
+  // Configurar eventos de login
+  setupLoginEvents();
 
-function incrementLoginAttempts() {
-  const current = getLoginAttempts();
-  localStorage.setItem(STORAGE_KEYS.loginAttempts, (current + 1).toString());
-  return current + 1;
-}
+  // Verificar estado de bloqueio
+  checkLockoutState();
 
-function resetLoginAttempts() {
-  localStorage.removeItem(STORAGE_KEYS.loginAttempts);
-}
+  console.log("✅ Sistema de segurança inicializado");
+});
 
-function setLockout() {
-  const lockoutUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
-  localStorage.setItem(STORAGE_KEYS.lockoutUntil, lockoutUntil.toString());
-}
+// ===== VERIFICAR SESSÃO EXISTENTE =====
+function checkExistingSession() {
+  const sessionData = localStorage.getItem("leuria-admin-session");
 
-function isLockedOut() {
-  const lockoutUntil = localStorage.getItem(STORAGE_KEYS.lockoutUntil);
-  if (!lockoutUntil) return false;
+  if (sessionData) {
+    try {
+      const session = JSON.parse(sessionData);
+      const now = Date.now();
 
-  if (Date.now() < parseInt(lockoutUntil)) {
-    return true;
+      // Verificar se a sessão ainda é válida
+      if (
+        session.timestamp &&
+        now - session.timestamp < SECURITY_CONFIG.SESSION_TIMEOUT
+      ) {
+        securityState.isAuthenticated = true;
+        showAdminPanel();
+        startSessionTimer();
+        console.log("✅ Sessão válida encontrada");
+        return;
+      } else {
+        // Sessão expirada
+        clearSession();
+        console.log("⚠️ Sessão expirada");
+      }
+    } catch (error) {
+      console.error("❌ Erro ao verificar sessão:", error);
+      clearSession();
+    }
   }
 
-  // Lockout expirado
-  localStorage.removeItem(STORAGE_KEYS.lockoutUntil);
-  resetLoginAttempts();
-  return false;
+  showLoginScreen();
 }
 
-function getRemainingLockoutTime() {
-  const lockoutUntil = localStorage.getItem(STORAGE_KEYS.lockoutUntil);
-  if (!lockoutUntil) return 0;
+// ===== CONFIGURAR EVENTOS DE LOGIN =====
+function setupLoginEvents() {
+  const loginForm = document.getElementById("login-form");
+  const logoutBtn = document.getElementById("btn-logout");
 
-  const remaining = parseInt(lockoutUntil) - Date.now();
-  return Math.max(0, Math.ceil(remaining / 1000));
+  if (loginForm) {
+    loginForm.addEventListener("submit", handleLogin);
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", handleLogout);
+  }
 }
 
-// ========================================
-// VALIDAÇÃO DE LOGIN COM CAPTCHA
-// ========================================
-function validateLogin(username, password, captchaResponse) {
-  // Verificar lockout
-  if (isLockedOut()) {
-    return {
-      success: false,
-      error: "locked",
-      remainingTime: getRemainingLockoutTime(),
-    };
+// ===== VERIFICAR ESTADO DE BLOQUEIO =====
+function checkLockoutState() {
+  const lockoutData = localStorage.getItem("leuria-admin-lockout");
+
+  if (lockoutData) {
+    try {
+      const lockout = JSON.parse(lockoutData);
+      const now = Date.now();
+
+      if (
+        lockout.timestamp &&
+        now - lockout.timestamp < SECURITY_CONFIG.LOCKOUT_DURATION
+      ) {
+        const remainingTime = Math.ceil(
+          (SECURITY_CONFIG.LOCKOUT_DURATION - (now - lockout.timestamp)) / 1000,
+        );
+        showLockoutMessage(remainingTime);
+        securityState.isLocked = true;
+
+        // Timer para remover o bloqueio
+        securityState.lockoutTimer = setTimeout(
+          () => {
+            clearLockout();
+          },
+          SECURITY_CONFIG.LOCKOUT_DURATION - (now - lockout.timestamp),
+        );
+      } else {
+        clearLockout();
+      }
+    } catch (error) {
+      console.error("❌ Erro ao verificar bloqueio:", error);
+      clearLockout();
+    }
+  }
+}
+
+// ===== MANIPULAR LOGIN =====
+function handleLogin(event) {
+  event.preventDefault();
+
+  // Verificar se está bloqueado
+  if (securityState.isLocked) {
+    showMessage("🚫 Sistema temporariamente bloqueado. Aguarde.", "error");
+    return;
   }
 
-  // Verificar CAPTCHA (em desenvolvimento, aceita sem CAPTCHA)
-  if (!captchaResponse && window.location.hostname !== "localhost") {
-    return { success: false, error: "captcha", message: "Resolva o CAPTCHA!" };
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const recaptchaResponse = grecaptcha.getResponse();
+
+  // Validações
+  if (!username || !password) {
+    showMessage("❌ Por favor, preencha todos os campos", "error");
+    return;
   }
 
-  // Buscar credenciais
-  const credentials = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.credentials),
+  if (!recaptchaResponse) {
+    showMessage("❌ Por favor, complete o reCAPTCHA", "error");
+    return;
+  }
+
+  // Verificar credenciais
+  if (validateCredentials(username, password)) {
+    handleSuccessfulLogin();
+  } else {
+    handleFailedLogin();
+  }
+}
+
+// ===== VALIDAR CREDENCIAIS =====
+function validateCredentials(username, password) {
+  return (
+    username === SECURITY_CONFIG.ADMIN_CREDENTIALS.username &&
+    password === SECURITY_CONFIG.ADMIN_CREDENTIALS.password
+  );
+}
+
+// ===== LOGIN BEM-SUCEDIDO =====
+function handleSuccessfulLogin() {
+  console.log("✅ Login bem-sucedido");
+
+  // Resetar tentativas
+  securityState.loginAttempts = 0;
+  securityState.isAuthenticated = true;
+
+  // Criar sessão
+  createSession();
+
+  // Mostrar painel
+  showAdminPanel();
+
+  // Iniciar timer de sessão
+  startSessionTimer();
+
+  // Feedback
+  showMessage("✅ Login realizado com sucesso!", "success");
+
+  // Log de segurança
+  logSecurityEvent("LOGIN_SUCCESS", {
+    timestamp: new Date().toISOString(),
+    username: SECURITY_CONFIG.ADMIN_CREDENTIALS.username,
+  });
+}
+
+// ===== LOGIN FALHADO =====
+function handleFailedLogin() {
+  securityState.loginAttempts++;
+
+  console.log(
+    `❌ Tentativa de login inválida (${securityState.loginAttempts}/${SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS})`,
   );
 
-  // Validar credenciais
-  const passwordHash = hashPassword(password);
-  if (
-    username === credentials.username &&
-    passwordHash === credentials.passwordHash
-  ) {
-    resetLoginAttempts();
-    return { success: true };
+  // Mostrar erro
+  const remainingAttempts =
+    SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - securityState.loginAttempts;
+  showMessage(
+    `❌ Credenciais incorretas. ${remainingAttempts} tentativas restantes.`,
+    "error",
+  );
+
+  // Verificar se deve bloquear
+  if (securityState.loginAttempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
+    activateLockout();
   }
 
-  // Login falhou
-  const attempts = incrementLoginAttempts();
+  // Limpar formulário
+  document.getElementById("password").value = "";
+  grecaptcha.reset();
 
-  if (attempts >= SECURITY_CONFIG.maxLoginAttempts) {
-    setLockout();
-    return {
-      success: false,
-      error: "locked",
-      remainingTime: getRemainingLockoutTime(),
-    };
-  }
+  // Log de segurança
+  logSecurityEvent("LOGIN_FAILED", {
+    timestamp: new Date().toISOString(),
+    attempts: securityState.loginAttempts,
+  });
+}
 
-  return {
-    success: false,
-    error: "credentials",
-    remainingAttempts: SECURITY_CONFIG.maxLoginAttempts - attempts,
+// ===== ATIVAR BLOQUEIO =====
+function activateLockout() {
+  securityState.isLocked = true;
+  securityState.loginAttempts = 0;
+
+  // Salvar estado de bloqueio
+  const lockoutData = {
+    timestamp: Date.now(),
+    reason: "MAX_ATTEMPTS_EXCEEDED",
   };
+
+  localStorage.setItem("leuria-admin-lockout", JSON.stringify(lockoutData));
+
+  // Mostrar mensagem de bloqueio
+  showLockoutMessage(SECURITY_CONFIG.LOCKOUT_DURATION / 1000);
+
+  // Timer para remover bloqueio
+  securityState.lockoutTimer = setTimeout(() => {
+    clearLockout();
+  }, SECURITY_CONFIG.LOCKOUT_DURATION);
+
+  console.log("🚫 Sistema bloqueado por excesso de tentativas");
+
+  // Log de segurança
+  logSecurityEvent("LOCKOUT_ACTIVATED", {
+    timestamp: new Date().toISOString(),
+    duration: SECURITY_CONFIG.LOCKOUT_DURATION,
+  });
 }
 
-// ========================================
-// SISTEMA DE RECUPERAÇÃO DE SENHA
-// ========================================
-function generateResetCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+// ===== LIMPAR BLOQUEIO =====
+function clearLockout() {
+  securityState.isLocked = false;
+  securityState.loginAttempts = 0;
+
+  localStorage.removeItem("leuria-admin-lockout");
+
+  if (securityState.lockoutTimer) {
+    clearTimeout(securityState.lockoutTimer);
+    securityState.lockoutTimer = null;
+  }
+
+  hideLockoutMessage();
+  console.log("🔓 Bloqueio removido");
 }
 
-function saveResetCode(code, email) {
-  const data = {
-    code: code,
-    email: email,
-    expiresAt: Date.now() + SECURITY_CONFIG.resetCodeExpiration,
+// ===== CRIAR SESSÃO =====
+function createSession() {
+  const sessionData = {
+    timestamp: Date.now(),
+    username: SECURITY_CONFIG.ADMIN_CREDENTIALS.username,
+    id: generateSessionId(),
   };
-  localStorage.setItem(STORAGE_KEYS.resetCode, JSON.stringify(data));
+
+  localStorage.setItem("leuria-admin-session", JSON.stringify(sessionData));
 }
 
-function verifyResetCode(code) {
-  const stored = localStorage.getItem(STORAGE_KEYS.resetCode);
-  if (!stored) return { valid: false, error: "no_code" };
-
-  const data = JSON.parse(stored);
-
-  // Verificar expiração
-  if (Date.now() > data.expiresAt) {
-    localStorage.removeItem(STORAGE_KEYS.resetCode);
-    return { valid: false, error: "expired" };
+// ===== INICIAR TIMER DE SESSÃO =====
+function startSessionTimer() {
+  // Limpar timer existente
+  if (securityState.sessionTimer) {
+    clearTimeout(securityState.sessionTimer);
   }
 
-  // Verificar código
-  if (code === data.code) {
-    return { valid: true };
+  // Novo timer
+  securityState.sessionTimer = setTimeout(() => {
+    handleSessionTimeout();
+  }, SECURITY_CONFIG.SESSION_TIMEOUT);
+}
+
+// ===== TIMEOUT DE SESSÃO =====
+function handleSessionTimeout() {
+  console.log("⏰ Sessão expirada");
+
+  showMessage("⏰ Sessão expirada. Faça login novamente.", "warning");
+
+  // Log de segurança
+  logSecurityEvent("SESSION_TIMEOUT", {
+    timestamp: new Date().toISOString(),
+  });
+
+  handleLogout();
+}
+
+// ===== LOGOUT =====
+function handleLogout() {
+  console.log("🚪 Fazendo logout...");
+
+  // Log de segurança
+  logSecurityEvent("LOGOUT", {
+    timestamp: new Date().toISOString(),
+  });
+
+  // Limpar estado
+  securityState.isAuthenticated = false;
+
+  // Limpar timers
+  if (securityState.sessionTimer) {
+    clearTimeout(securityState.sessionTimer);
+    securityState.sessionTimer = null;
   }
 
-  return { valid: false, error: "invalid" };
+  // Limpar sessão
+  clearSession();
+
+  // Mostrar tela de login
+  showLoginScreen();
+
+  showMessage("✅ Logout realizado com sucesso", "success");
 }
 
-function updatePassword(newPassword) {
-  const credentials = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.credentials),
-  );
-  credentials.passwordHash = hashPassword(newPassword);
-  localStorage.setItem(STORAGE_KEYS.credentials, JSON.stringify(credentials));
-  localStorage.removeItem(STORAGE_KEYS.resetCode);
+// ===== LIMPAR SESSÃO =====
+function clearSession() {
+  localStorage.removeItem("leuria-admin-session");
 }
 
-function updateEmail(email) {
-  const credentials = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.credentials),
-  );
-  credentials.email = email;
-  localStorage.setItem(STORAGE_KEYS.credentials, JSON.stringify(credentials));
+// ===== MOSTRAR TELAS =====
+function showLoginScreen() {
+  const loginScreen = document.getElementById("login-screen");
+  const adminPanel = document.getElementById("admin-panel");
+
+  if (loginScreen) loginScreen.style.display = "block";
+  if (adminPanel) adminPanel.style.display = "none";
 }
 
-function getStoredEmail() {
-  const credentials = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.credentials),
-  );
-  return credentials.email;
+function showAdminPanel() {
+  const loginScreen = document.getElementById("login-screen");
+  const adminPanel = document.getElementById("admin-panel");
+
+  if (loginScreen) loginScreen.style.display = "none";
+  if (adminPanel) adminPanel.style.display = "block";
 }
 
-// ========================================
-// ENVIO DE EMAIL (EmailJS)
-// ========================================
-async function sendResetEmail(email, code) {
-  // Verificar se EmailJS está configurado
-  const config = SECURITY_CONFIG.emailjs;
+// ===== MENSAGENS =====
+function showLockoutMessage(seconds) {
+  const loginError = document.getElementById("login-error");
+  const loginBlocked = document.getElementById("login-blocked");
+  const countdown = document.getElementById("countdown");
 
-  if (
-    config.serviceId === "SEU_SERVICE_ID" ||
-    !config.publicKey ||
-    typeof emailjs === "undefined"
-  ) {
-    // Modo desenvolvimento: mostrar código no console
-    if (DEV_MODE) {
-      devLog("=".repeat(50));
-      devLog("🔐 CÓDIGO DE RECUPERAÇÃO (MODO DESENVOLVIMENTO)");
-      devLog(`Email: ${email}`);
-      devLog(`Código: ${code}`);
-      devLog(`Válido por: 10 minutos`);
-      devLog("=".repeat(50));
+  if (loginError) loginError.style.display = "none";
+  if (loginBlocked) loginBlocked.style.display = "block";
+
+  // Countdown
+  let remainingSeconds = seconds;
+
+  function updateCountdown() {
+    if (countdown) {
+      countdown.textContent = remainingSeconds;
     }
 
-    // Simular sucesso
-    return { success: true, devMode: true };
+    remainingSeconds--;
+
+    if (remainingSeconds >= 0) {
+      setTimeout(updateCountdown, 1000);
+    }
   }
 
-  try {
-    // Inicializar EmailJS
-    emailjs.init(config.publicKey);
+  updateCountdown();
+}
 
-    // Enviar email
-    const response = await emailjs.send(config.serviceId, config.templateId, {
-      to_email: email,
-      reset_code: code,
-      user_name: "Administrador",
-      expiration_time: "10 minutos",
-    });
-
-    return { success: true };
-  } catch (error) {
-    devError("Erro ao enviar email:", error);
-    return { success: false, error: error.text };
+function hideLockoutMessage() {
+  const loginBlocked = document.getElementById("login-blocked");
+  if (loginBlocked) {
+    loginBlocked.style.display = "none";
   }
 }
 
-// ========================================
-// INICIALIZAÇÃO
-// ========================================
-initializeCredentials();
+// ===== UTILIDADES =====
+function generateSessionId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
 
-devLog("✅ Sistema de segurança carregado!");
+function logSecurityEvent(event, data) {
+  const logEntry = {
+    event: event,
+    timestamp: new Date().toISOString(),
+    ...data,
+  };
+
+  console.log(`🛡️ [SECURITY] ${event}:`, logEntry);
+
+  // Em produção, enviar para sistema de logs
+  // sendToSecurityLog(logEntry);
+}
+
+function showMessage(message, type = "info") {
+  // Implementação simples de toast/alert
+  console.log(`[${type.toUpperCase()}] ${message}`);
+
+  // Você pode implementar um sistema de toast aqui
+  if (type === "error") {
+    alert(message);
+  }
+}
+
+// ===== VERIFICAR AUTENTICAÇÃO (para outros scripts) =====
+function isAuthenticated() {
+  return securityState.isAuthenticated;
+}
+
+// ===== MIDDLEWARE DE PROTEÇÃO =====
+function requireAuth() {
+  if (!isAuthenticated()) {
+    showLoginScreen();
+    throw new Error("Acesso não autorizado");
+  }
+}
+
+// ===== EXPORTAR FUNÇÕES =====
+window.AdminSecurity = {
+  isAuthenticated,
+  requireAuth,
+  handleLogout,
+  clearSession,
+};
+
+console.log("🔐 Módulo de segurança carregado - Léuria Admin");

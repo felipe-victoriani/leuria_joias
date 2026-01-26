@@ -5,28 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Loja feminina de maquiagens e pijamas - Andreza Store"
+      content="Léuria - Bolsas e Acessórios Femininos de qualidade e elegância"
     />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Andreza Store - Maquiagens & Pijamas" />
+    <meta
+      property="og:title"
+      content="Léuria - Bolsas & Acessórios Femininos"
+    />
     <meta
       property="og:description"
-      content="Loja feminina de maquiagens e pijamas com os melhores produtos e preços"
+      content="Descubra bolsas, mochilas e acessórios únicos que combinam estilo, qualidade e sofisticação"
     />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Andreza Store - Maquiagens & Pijamas" />
+    <meta
+      name="twitter:title"
+      content="Léuria - Bolsas & Acessórios Femininos"
+    />
     <meta
       name="twitter:description"
-      content="Loja feminina de maquiagens e pijamas com os melhores produtos e preços"
+      content="Descubra bolsas, mochilas e acessórios únicos que combinam estilo, qualidade e sofisticação"
     />
 
-    <link rel="icon" type="image/jpeg" href="images/favicon.jpeg" />
-    <link rel="shortcut icon" type="image/jpeg" href="images/favicon.jpeg" />
-    <title>OutLet MakeUp</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%232f4c3a'/><circle cx='50' cy='50' r='42' fill='%234a6b52'/><text x='50' y='65' font-family='serif' font-size='35' font-weight='700' fill='%23c9b299' text-anchor='middle'>LJ</text></svg>"
+    />
+    <title>Léuria - Bolsas & Acessórios</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -34,16 +43,31 @@
     <header class="header">
       <div class="container">
         <div class="logo">
-          <img src="images/favicon.jpeg" alt="Logo" class="logo-img" />
-          <h1>OutLet MakeUp</h1>
+          <div
+            style="
+              width: 45px;
+              height: 45px;
+              background: linear-gradient(135deg, #2f4c3a 0%, #4a6b52 100%);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 3px 12px rgba(47, 76, 58, 0.3);
+              font-family: 'Playfair Display', serif;
+              font-size: 18px;
+              font-weight: 700;
+              color: #c9b299;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            "
+          >
+            LJ
+          </div>
+          <h1>Léuria Jara Bolsas e Acessórios</h1>
         </div>
         <nav class="nav">
           <a href="#inicio" class="nav-link">Início</a>
-          <a href="#maquiagens" class="nav-link">Maquiagens</a>
-          <a href="#pijamas" class="nav-link">Pijamas</a>
-          <a href="pages/sexyshop.html" class="nav-link nav-link-sexy"
-            >🔞 Sexy Shop</a
-          >
+          <a href="#bolsas" class="nav-link">Bolsas</a>
+          <a href="#acessorios" class="nav-link">Acessórios</a>
           <a href="#contato" class="nav-link">Contato</a>
         </nav>
         <button
@@ -65,39 +89,44 @@
     <!-- BANNER PRINCIPAL -->
     <section id="inicio" class="hero">
       <div class="hero-content">
-        <h2 class="hero-title">Beleza que Transforma, Conforto que Encanta</h2>
+        <h2 class="hero-title">Elegância que Acompanha Você</h2>
         <p class="hero-subtitle">
-          Descubra maquiagens incríveis e pijamas confortáveis para se sentir
-          radiante todos os dias
+          Descubra bolsas e acessórios únicos que combinam estilo,
+          qualidade e sofisticação para todas as ocasiões.
         </p>
-        <a href="#maquiagens" class="btn btn-primary">Ver Produtos</a>
+        <a href="#bolsas" class="btn btn-primary">Descobrir Coleção</a>
       </div>
     </section>
 
-    <!-- SEÇÃO MAQUIAGENS -->
-    <section id="maquiagens" class="products-section">
+    <!-- SEÇÃO BOLSAS -->
+    <section id="bolsas" class="products-section">
       <div class="container">
-        <h2 class="section-title">💄 Maquiagens e Perfumarias</h2>
+        <h2 class="section-title">👜 Bolsas Femininas</h2>
         <p class="section-subtitle">
-          Realce sua beleza natural com produtos de qualidade
+          Bolsas elegantes para acompanhar seu estilo único
         </p>
 
-        <div class="products-grid" id="makeup-grid">
+        <div class="products-grid" id="bags-grid">
           <!-- Produtos carregados dinamicamente do Firebase -->
         </div>
       </div>
     </section>
 
-    <!-- SEÇÃO PIJAMAS -->
-    <section id="pijamas" class="products-section products-section-alt">
+
+
+    <!-- SEÇÃO ACESSÓRIOS -->
+    <section id="acessorios" class="products-section products-section-alt">
       <div class="container">
-        <h2 class="section-title">🌙 Pijamas</h2>
+        <h2 class="section-title">✨ Acessórios</h2>
         <p class="section-subtitle">
-          Conforto e estilo para suas noites perfeitas
+          Detalhes que fazem toda a diferença
         </p>
 
-        <div class="products-grid" id="pajamas-grid">
+        <div class="products-grid" id="accessories-grid">
           <!-- Produtos carregados dinamicamente do Firebase -->
+        </div>
+      </div>
+    </section>
         </div>
       </div>
     </section>
@@ -147,8 +176,8 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-section">
-            <h3>✨ OutLet MakeUp</h3>
-            <p>Sua beleza e conforto em primeiro lugar!</p>
+            <h3>👜 Léuria</h3>
+            <p>Bolsas e acessórios que refletem sua personalidade única!</p>
           </div>
 
           <div class="footer-section">
@@ -158,7 +187,7 @@
               <svg
                 width="16"
                 height="16"
-                fill="#ff006e"
+                fill="#f5deb3"
                 viewBox="0 0 24 24"
                 style="margin-right: 8px; vertical-align: middle"
               >
@@ -168,10 +197,10 @@
               </svg>
               Instagram:
               <a
-                href="https://www.instagram.com/outletmakeup.cg/"
+                href="https://www.instagram.com/leuria.bolsas/"
                 target="_blank"
-                style="color: #ff006e; text-decoration: none"
-                >@outletmakeup.cg</a
+                style="color: #f5deb3; text-decoration: none"
+                >@leuria.bolsas</a
               >
             </p>
             <p>📍 Campo Grande, MS</p>
@@ -189,10 +218,10 @@
 
         <div class="footer-bottom">
           <p>
-            &copy; 2026 OutLet MakeUp. Todos os direitos reservados. |
+            &copy; 2026 Léuria. Todos os direitos reservados. |
             <a
-              href="./pages/admin.html"
-              style="color: #667eea; text-decoration: none; font-weight: 600"
+              href="pages/admin.html"
+              style="color: #f5deb3; text-decoration: none; font-weight: 600"
               >🔐 Acesso Admin</a
             >
           </p>
