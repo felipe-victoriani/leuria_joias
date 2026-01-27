@@ -1,493 +1,323 @@
-// ===== CONFIGURAÇÕES E VARIÁVEIS GLOBAIS =====
-let cart = [];
-let products = [];
+/* ========================================
+   LEURIA - SCRIPT PRINCIPAL
+   Gerenciamento de Produtos e Carrinho
+   ======================================== */
+
+// Elementos DOM
+const productGrid = document.getElementById("product-grid");
+const cart = document.getElementById("cart");
+const cartOverlay = document.getElementById("cart-overlay");
+const cartItems = document.getElementById("cart-items");
+const cartTotal = document.getElementById("cart-total");
+const cartCount = document.getElementById("cart-count");
+const cartEmpty = document.getElementById("cart-empty");
+const btnCart = document.getElementById("btn-cart");
+const btnCloseCart = document.getElementById("btn-close-cart");
+const btnCheckout = document.getElementById("btn-checkout");
+
+// Estado do carrinho
+let cartData = [];
 
 // ===== INICIALIZAÇÃO =====
-document.addEventListener("DOMContentLoaded", function () {
-  console.log("🎯 Léuria - Sistema iniciando...");
-
-  // Carregar carrinho do localStorage
+document.addEventListener("DOMContentLoaded", () => {
+  // loadProducts(); // Comentado para mostrar os cards de exemplo
   loadCartFromStorage();
-
-  // Inicializar eventos
-  initializeEventListeners();
-
-  // Carregar produtos do Firebase
-  loadProductsFromFirebase();
-
-  // Atualizar badge do carrinho
-  updateCartBadge();
-
-  console.log("✅ Sistema inicializado com sucesso!");
+  setupEventListeners();
 });
 
 // ===== EVENT LISTENERS =====
-function initializeEventListeners() {
-  // Cart Modal
-  const cartIcon = document.getElementById("cart-icon");
-  const cartModal = document.getElementById("cart-modal");
-  const cartClose = document.getElementById("cart-close");
-  const cartOverlay = document.getElementById("cart-overlay");
-  const clearCartBtn = document.getElementById("clear-cart");
-  const checkoutBtn = document.getElementById("checkout-whatsapp");
-  const contactBtn = document.getElementById("contact-whatsapp");
+function setupEventListeners() {
+  // Abrir/Fechar carrinho
+  btnCart.addEventListener("click", toggleCart);
+  btnCloseCart.addEventListener("click", toggleCart);
+  cartOverlay.addEventListener("click", toggleCart);
 
-  // Abrir carrinho
-  if (cartIcon) {
-    cartIcon.addEventListener("click", openCart);
-  }
+  // Checkout
+  btnCheckout.addEventListener("click", handleCheckout);
 
-  // Fechar carrinho
-  if (cartClose) {
-    cartClose.addEventListener("click", closeCart);
+  // Newsletter
+  const newsletterForm = document.getElementById("newsletter-form");
+  if (newsletterForm) {
+    newsletterForm.addEventListener("submit", handleNewsletterSubmit);
   }
-  if (cartOverlay) {
-    cartOverlay.addEventListener("click", closeCart);
-  }
-
-  // Limpar carrinho
-  if (clearCartBtn) {
-    clearCartBtn.addEventListener("click", clearCart);
-  }
-
-  // WhatsApp buttons
-  if (checkoutBtn) {
-    checkoutBtn.addEventListener("click", sendWhatsAppOrder);
-  }
-  if (contactBtn) {
-    contactBtn.addEventListener("click", sendWhatsAppContact);
-  }
-
-  // Menu toggle para mobile
-  const menuToggle = document.querySelector(".menu-toggle");
-  const nav = document.querySelector(".nav");
-
-  if (menuToggle && nav) {
-    menuToggle.addEventListener("click", () => {
-      nav.classList.toggle("active");
-    });
-  }
-
-  // Smooth scroll para links de navegação
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener("click", function (e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute("href"));
-      if (target) {
-        target.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    });
-  });
 }
 
 // ===== CARREGAR PRODUTOS DO FIREBASE =====
-function loadProductsFromFirebase() {
-  console.log("📦 Carregando produtos do Firebase...");
+function loadProducts() {
+  // Mostrar loading
+  productGrid.innerHTML =
+    '<p style="text-align: center; grid-column: 1/-1;">Carregando produtos...</p>';
 
-  try {
-    // Carregar bolsas
-    firebase
-      .database()
-      .ref("products/bolsas")
-      .once("value")
-      .then((snapshot) => {
-        const bolsasData = snapshot.val();
-        if (bolsasData) {
-          const bolsasArray = Object.entries(bolsasData).map(
-            ([key, value]) => ({
-              id: key,
-              ...value,
-              category: "bolsas",
-            }),
-          );
-          renderProducts(bolsasArray, "bags-grid");
-          console.log(`✅ ${bolsasArray.length} bolsas carregadas`);
-        } else {
-          showNoProductsMessage("bags-grid", "Nenhuma bolsa encontrada");
+  db.collection("products")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(
+      (querySnapshot) => {
+        productGrid.innerHTML = "";
+
+        if (querySnapshot.empty) {
+          productGrid.innerHTML =
+            '<p style="text-align: center; grid-column: 1/-1;">Nenhum produto disponível no momento.</p>';
+          return;
         }
-      })
-      .catch((error) => {
-        console.error("❌ Erro ao carregar bolsas:", error);
-        showNoProductsMessage("bags-grid", "Erro ao carregar bolsas");
-      });
 
-    // Carregar acessórios
-    firebase
-      .database()
-      .ref("products/acessorios")
-      .once("value")
-      .then((snapshot) => {
-        const acessoriosData = snapshot.val();
-        if (acessoriosData) {
-          const acessoriosArray = Object.entries(acessoriosData).map(
-            ([key, value]) => ({
-              id: key,
-              ...value,
-              category: "acessorios",
-            }),
-          );
-          renderProducts(acessoriosArray, "accessories-grid");
-          console.log(`✅ ${acessoriosArray.length} acessórios carregados`);
-        } else {
-          showNoProductsMessage(
-            "accessories-grid",
-            "Nenhum acessório encontrado",
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("❌ Erro ao carregar acessórios:", error);
-        showNoProductsMessage(
-          "accessories-grid",
-          "Erro ao carregar acessórios",
-        );
-      });
-  } catch (error) {
-    console.error("❌ Erro geral ao carregar produtos:", error);
-    showErrorMessage();
-  }
+        querySnapshot.forEach((doc) => {
+          const product = { id: doc.id, ...doc.data() };
+          renderProduct(product);
+        });
+      },
+      (error) => {
+        console.error("Erro ao carregar produtos:", error);
+        productGrid.innerHTML =
+          '<p style="text-align: center; grid-column: 1/-1; color: red;">Erro ao carregar produtos. Tente novamente.</p>';
+      },
+    );
 }
 
-// ===== RENDERIZAR PRODUTOS =====
-function renderProducts(products, gridId) {
-  const grid = document.getElementById(gridId);
-  if (!grid) {
-    console.error(`❌ Grid não encontrada: ${gridId}`);
-    return;
-  }
+// ===== RENDERIZAR PRODUTO =====
+function renderProduct(product) {
+  const isOutOfStock = product.status === "esgotado";
 
-  if (!products || products.length === 0) {
-    showNoProductsMessage(gridId, "Nenhum produto encontrado");
-    return;
-  }
+  const productElement = document.createElement("div");
+  productElement.classList.add("product");
+  productElement.innerHTML = `
+    <div class="product-image-wrapper">
+      <img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy">
+      ${isOutOfStock ? '<span class="product-badge sold-out">Esgotado</span>' : ""}
+    </div>
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      ${product.description ? `<p class="product-description">${product.description}</p>` : ""}
+      <p class="product-price">R$ ${formatPrice(product.price)}</p>
+      <button 
+        class="btn-add-cart" 
+        ${isOutOfStock ? "disabled" : ""}
+        onclick="addToCart('${product.id}', '${escapeHtml(product.name)}', ${product.price}, '${product.image}')">
+        ${isOutOfStock ? "Indisponível" : "Adicionar ao Carrinho"}
+      </button>
+    </div>
+  `;
 
-  grid.innerHTML = products
-    .map(
-      (product) => `
-        <div class="product-card" data-aos="fade-up">
-            <img 
-                src="${product.image || "images/placeholder.jpg"}" 
-                alt="${product.name}" 
-                class="product-image"
-                onerror="this.src='images/placeholder.jpg'"
-            />
-            <div class="product-info">
-                <h3 class="product-name">${product.name}</h3>
-                <p class="product-price">R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}</p>
-                <p class="product-description">${product.description || "Produto de excelente qualidade"}</p>
-                <button 
-                    class="btn btn-add-cart" 
-                    onclick="addToCart('${product.id}', '${product.name}', '${product.price}', '${product.image}', '${product.category}')"
-                >
-                    🛒 Adicionar ao Carrinho
-                </button>
-            </div>
-        </div>
-    `,
-    )
-    .join("");
-}
-
-// ===== MENSAGEM DE PRODUTOS VAZIOS =====
-function showNoProductsMessage(gridId, message) {
-  const grid = document.getElementById(gridId);
-  if (grid) {
-    grid.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px; color: #8b4513; grid-column: 1 / -1;">
-                <p style="font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">📦 ${message}</p>
-                <span style="color: #6d4c41;">Em breve teremos novidades incríveis!</span>
-            </div>
-        `;
-  }
-}
-
-// ===== MENSAGEM DE ERRO =====
-function showErrorMessage() {
-  const grids = ["bags-grid", "accessories-grid"];
-  grids.forEach((gridId) => {
-    const grid = document.getElementById(gridId);
-    if (grid) {
-      grid.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; color: #ff6b6b; grid-column: 1 / -1;">
-                    <p style="font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">⚠️ Erro ao carregar produtos</p>
-                    <span style="color: #6d4c41;">Tente recarregar a página</span>
-                </div>
-            `;
-    }
-  });
+  productGrid.appendChild(productElement);
 }
 
 // ===== ADICIONAR AO CARRINHO =====
-function addToCart(id, name, price, image, category) {
-  console.log("🛒 Adicionando produto ao carrinho:", name);
-
-  // Verificar se o produto já existe no carrinho
-  const existingProduct = cart.find((item) => item.id === id);
+function addToCart(id, name, price, image) {
+  const existingProduct = cartData.find((item) => item.id === id);
 
   if (existingProduct) {
     existingProduct.quantity += 1;
-    console.log(`📈 Quantidade aumentada: ${existingProduct.quantity}`);
   } else {
-    const product = {
-      id: id,
-      name: name,
-      price: parseFloat(price),
-      image: image,
-      category: category,
-      quantity: 1,
-    };
-    cart.push(product);
-    console.log("✅ Produto adicionado:", product);
+    cartData.push({ id, name, price, image, quantity: 1 });
   }
 
-  updateCartBadge();
-  updateCartDisplay();
+  updateCart();
   saveCartToStorage();
+  showNotification("Produto adicionado ao carrinho!");
 
-  // Feedback visual
-  showAddToCartFeedback();
-}
-
-// ===== FEEDBACK VISUAL =====
-function showAddToCartFeedback() {
-  const cartIcon = document.getElementById("cart-icon");
-  if (cartIcon) {
-    cartIcon.style.transform = "scale(1.2)";
-    setTimeout(() => {
-      cartIcon.style.transform = "scale(1)";
-    }, 200);
+  // Abrir carrinho automaticamente
+  if (!cart.classList.contains("active")) {
+    toggleCart();
   }
 }
 
-// ===== ATUALIZAR BADGE DO CARRINHO =====
-function updateCartBadge() {
-  const badge = document.getElementById("cart-badge");
-  if (badge) {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    badge.textContent = totalItems;
-    badge.style.display = totalItems > 0 ? "flex" : "none";
-  }
-}
-
-// ===== ABRIR/FECHAR CARRINHO =====
-function openCart() {
-  console.log("🛒 Abrindo carrinho...");
-  const modal = document.getElementById("cart-modal");
-  if (modal) {
-    modal.classList.add("active");
-    updateCartDisplay();
-    document.body.style.overflow = "hidden";
-  }
-}
-
-function closeCart() {
-  console.log("🚪 Fechando carrinho...");
-  const modal = document.getElementById("cart-modal");
-  if (modal) {
-    modal.classList.remove("active");
-    document.body.style.overflow = "auto";
-  }
-}
-
-// ===== ATUALIZAR DISPLAY DO CARRINHO =====
-function updateCartDisplay() {
-  const cartEmpty = document.getElementById("cart-empty");
-  const cartItems = document.getElementById("cart-items");
-  const cartTotal = document.getElementById("cart-total");
-  const checkoutBtn = document.getElementById("checkout-whatsapp");
-
-  if (cart.length === 0) {
-    if (cartEmpty) cartEmpty.style.display = "block";
-    if (cartItems) cartItems.style.display = "none";
-    if (checkoutBtn) checkoutBtn.disabled = true;
-  } else {
-    if (cartEmpty) cartEmpty.style.display = "none";
-    if (cartItems) cartItems.style.display = "block";
-    if (checkoutBtn) checkoutBtn.disabled = false;
-
-    renderCartItems();
-  }
-
-  updateCartTotal();
-}
-
-// ===== RENDERIZAR ITENS DO CARRINHO =====
-function renderCartItems() {
-  const cartItems = document.getElementById("cart-items");
-  if (!cartItems) return;
-
-  cartItems.innerHTML = cart
-    .map(
-      (item) => `
-        <div class="cart-item">
-            <img 
-                src="${item.image || "images/placeholder.jpg"}" 
-                alt="${item.name}" 
-                class="cart-item-image"
-                onerror="this.src='images/placeholder.jpg'"
-            />
-            <div class="cart-item-info">
-                <div class="cart-item-name">${item.name}</div>
-                <div class="cart-item-price">R$ ${item.price.toFixed(2).replace(".", ",")}</div>
-                <div class="cart-item-controls">
-                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
-                    <span class="cart-item-quantity">${item.quantity}</span>
-                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
-                    <button class="remove-item" onclick="removeFromCart('${item.id}')">🗑️</button>
-                </div>
-            </div>
-        </div>
-    `,
-    )
-    .join("");
+// ===== REMOVER DO CARRINHO =====
+function removeFromCart(id) {
+  cartData = cartData.filter((item) => item.id !== id);
+  updateCart();
+  saveCartToStorage();
+  showNotification("Produto removido do carrinho!");
 }
 
 // ===== ATUALIZAR QUANTIDADE =====
 function updateQuantity(id, change) {
-  const product = cart.find((item) => item.id === id);
+  const product = cartData.find((item) => item.id === id);
+
   if (product) {
     product.quantity += change;
 
     if (product.quantity <= 0) {
       removeFromCart(id);
     } else {
-      updateCartBadge();
-      updateCartDisplay();
+      updateCart();
       saveCartToStorage();
-      console.log(
-        `📊 Quantidade atualizada: ${product.name} = ${product.quantity}`,
-      );
     }
   }
 }
 
-// ===== REMOVER DO CARRINHO =====
-function removeFromCart(id) {
-  const productIndex = cart.findIndex((item) => item.id === id);
-  if (productIndex > -1) {
-    const removedProduct = cart.splice(productIndex, 1)[0];
-    console.log("🗑️ Produto removido:", removedProduct.name);
+// ===== ATUALIZAR CARRINHO =====
+function updateCart() {
+  cartItems.innerHTML = "";
+  let total = 0;
 
-    updateCartBadge();
-    updateCartDisplay();
-    saveCartToStorage();
+  if (cartData.length === 0) {
+    cartEmpty.style.display = "flex";
+    cartItems.style.display = "none";
+    btnCheckout.disabled = true;
+    cartCount.textContent = "0";
+  } else {
+    cartEmpty.style.display = "none";
+    cartItems.style.display = "block";
+    btnCheckout.disabled = false;
+
+    cartData.forEach((item) => {
+      total += item.price * item.quantity;
+
+      const cartItem = document.createElement("li");
+      cartItem.classList.add("cart-item");
+      cartItem.innerHTML = `
+        <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+        <div class="cart-item-info">
+          <h4 class="cart-item-name">${item.name}</h4>
+          <p class="cart-item-price">R$ ${formatPrice(item.price)}</p>
+          <div class="cart-item-quantity">
+            <button class="btn-quantity" onclick="updateQuantity('${item.id}', -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="btn-quantity" onclick="updateQuantity('${item.id}', 1)">+</button>
+          </div>
+        </div>
+        <button class="btn-remove" onclick="removeFromCart('${item.id}')" aria-label="Remover produto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      `;
+
+      cartItems.appendChild(cartItem);
+    });
+
+    // Atualizar contador
+    const totalItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
+    cartCount.textContent = totalItems;
+  }
+
+  cartTotal.textContent = `R$ ${formatPrice(total)}`;
+}
+
+// ===== TOGGLE CARRINHO =====
+function toggleCart() {
+  const isActive = cart.classList.contains("active");
+  if (isActive) {
+    cart.classList.remove("active");
+    cartOverlay.classList.remove("active");
+    document.body.style.overflow = "";
+  } else {
+    cart.classList.add("active");
+    cartOverlay.classList.add("active");
+    document.body.style.overflow = "hidden";
   }
 }
 
-// ===== LIMPAR CARRINHO =====
-function clearCart() {
-  console.log("🧹 Limpando carrinho...");
-  cart = [];
-  updateCartBadge();
-  updateCartDisplay();
-  saveCartToStorage();
-}
+// ===== CHECKOUT VIA WHATSAPP =====
+function handleCheckout() {
+  if (cartData.length === 0) return;
 
-// ===== ATUALIZAR TOTAL DO CARRINHO =====
-function updateCartTotal() {
-  const totalElement = document.getElementById("cart-total");
-  if (totalElement) {
-    const total = cart.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-    totalElement.textContent = `R$ ${total.toFixed(2).replace(".", ",")}`;
-  }
-}
+  // Número do WhatsApp (substitua pelo número real)
+  const whatsappNumber = "5511999999999"; // Formato: código país + DDD + número
 
-// ===== WHATSAPP FUNCTIONS =====
-function sendWhatsAppOrder() {
-  if (cart.length === 0) {
-    alert("Seu carrinho está vazio!");
-    return;
-  }
+  // Montar mensagem
+  let message = "*🛍️ Pedido - Leuria*%0A%0A";
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  let message = `🛍️ *Pedido - Léuria*%0A%0A`;
-  message += `📦 *Itens do pedido:*%0A`;
-
-  cart.forEach((item) => {
-    message += `• ${item.name}%0A`;
-    message += `  Quantidade: ${item.quantity}%0A`;
-    message += `  Preço unitário: R$ ${item.price.toFixed(2).replace(".", ",")}%0A`;
-    message += `  Subtotal: R$ ${(item.price * item.quantity).toFixed(2).replace(".", ",")}%0A%0A`;
+  cartData.forEach((item, index) => {
+    message += `*${index + 1}.* ${item.name}%0A`;
+    message += `   Qtd: ${item.quantity}x R$ ${formatPrice(item.price)}%0A`;
+    message += `   Subtotal: R$ ${formatPrice(item.price * item.quantity)}%0A%0A`;
   });
 
-  message += `💰 *Total: R$ ${total.toFixed(2).replace(".", ",")}*%0A%0A`;
-  message += `🏪 Obrigado por escolher a Léuria!`;
+  const total = cartData.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+  message += `*💰 Total: R$ ${formatPrice(total)}*`;
 
-  // Número do WhatsApp da loja (ajustar conforme necessário)
-  const phoneNumber = "5567996149130";
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-
-  console.log("📱 Enviando pedido via WhatsApp...");
-  window.open(whatsappUrl, "_blank");
+  // Abrir WhatsApp
+  const whatsappURL = `https://wa.me/${whatsappNumber}?text=${message}`;
+  window.open(whatsappURL, "_blank");
 }
 
-function sendWhatsAppContact() {
-  const message = `Olá! 👋%0A%0AGostaria de saber mais sobre os produtos da *Léuria*.%0A%0APodem me ajudar? 😊`;
-  const phoneNumber = "5567996149130";
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-
-  console.log("📱 Abrindo WhatsApp para contato...");
-  window.open(whatsappUrl, "_blank");
-}
-
-// ===== STORAGE FUNCTIONS =====
+// ===== PERSISTÊNCIA DO CARRINHO =====
 function saveCartToStorage() {
-  try {
-    localStorage.setItem("leuria-cart", JSON.stringify(cart));
-    console.log("💾 Carrinho salvo no localStorage");
-  } catch (error) {
-    console.error("❌ Erro ao salvar carrinho:", error);
-  }
+  localStorage.setItem("leuriaCart", JSON.stringify(cartData));
 }
 
 function loadCartFromStorage() {
-  try {
-    const savedCart = localStorage.getItem("leuria-cart");
-    if (savedCart) {
-      cart = JSON.parse(savedCart);
-      console.log(
-        "📂 Carrinho carregado do localStorage:",
-        cart.length,
-        "itens",
-      );
-    }
-  } catch (error) {
-    console.error("❌ Erro ao carregar carrinho:", error);
-    cart = [];
+  const savedCart = localStorage.getItem("leuriaCart");
+  if (savedCart) {
+    cartData = JSON.parse(savedCart);
+    updateCart();
   }
 }
 
-// ===== UTILIDADES =====
+// ===== SCROLL SUAVE PARA PRODUTOS =====
+function scrollToProducts() {
+  const productsSection = document.getElementById("products-section");
+  const headerHeight = document.querySelector(".header").offsetHeight;
+  const targetPosition = productsSection.offsetTop - headerHeight - 20;
+
+  window.scrollTo({
+    top: targetPosition,
+    behavior: "smooth",
+  });
+}
+
+// ===== NEWSLETTER =====
+function handleNewsletterSubmit(e) {
+  e.preventDefault();
+  const emailInput = e.target.querySelector('input[type="email"]');
+  const email = emailInput.value;
+
+  if (email) {
+    // Aqui você pode adicionar integração com Firebase ou serviço de e-mail
+    showNotification(
+      "Obrigado por se inscrever! Em breve você receberá nossas novidades.",
+    );
+    emailInput.value = "";
+  }
+}
+
+// ===== FUNÇÕES UTILITÁRIAS =====
 function formatPrice(price) {
-  return parseFloat(price).toFixed(2).replace(".", ",");
+  return price.toFixed(2).replace(".", ",");
 }
 
-function isValidProduct(product) {
-  return (
-    product &&
-    product.name &&
-    product.price &&
-    !isNaN(parseFloat(product.price))
-  );
+function escapeHtml(text) {
+  return text.replace(/'/g, "\\'");
 }
 
-// ===== TRATAMENTO DE ERROS GLOBAIS =====
-window.addEventListener("error", function (event) {
-  console.error("❌ Erro global capturado:", event.error);
-});
+function showNotification(message) {
+  // Criar notificação simples
+  const notification = document.createElement("div");
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2d6a4f;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 10000;
+    animation: slideUp 0.3s ease;
+  `;
+  notification.textContent = message;
 
-// ===== LOG DE INICIALIZAÇÃO =====
-console.log(`
-🌟 ===================================
-   LÉURIA - BOLSAS & ACESSÓRIOS
-   Sistema de E-commerce
-   Versão: 1.0.0
-===================================
-`);
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.animation = "slideDown 0.3s ease";
+    setTimeout(() => notification.remove(), 300);
+  }, 2000);
+}
+
+// Adicionar animações CSS
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes slideDown {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(100px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);

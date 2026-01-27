@@ -1,564 +1,269 @@
-// ===== PAINEL ADMINISTRATIVO - LÉURIA =====
+/* ========================================
+   LEURIA - ADMIN SCRIPT
+   Gerenciamento de Produtos (Admin)
+   ======================================== */
 
-// Estado da aplicação admin
-let adminState = {
-  currentCategory: "bolsas",
-  products: {
-    bolsas: [],
-    mochilas: [],
-    carteiras: [],
-    acessorios: [],
-  },
-  editingProduct: null,
-  isLoading: false,
-};
+// Elementos DOM
+const productForm = document.getElementById("product-form");
+const editForm = document.getElementById("edit-form");
+const productList = document.getElementById("product-list");
+const productCount = document.getElementById("product-count");
+const editModal = document.getElementById("edit-modal");
 
 // ===== INICIALIZAÇÃO =====
-document.addEventListener("DOMContentLoaded", function () {
-  // Verificar autenticação
-  if (!AdminSecurity.isAuthenticated()) {
-    return; // O sistema de segurança já vai mostrar o login
-  }
-
-  console.log("👜 Painel administrativo da Léuria inicializando...");
-
-  // Configurar eventos
+document.addEventListener("DOMContentLoaded", () => {
+  loadAdminProducts();
   setupEventListeners();
-
-  // Carregar dados iniciais
-  loadInitialData();
-
-  console.log("✅ Painel administrativo inicializado");
 });
 
-// ===== CONFIGURAR EVENT LISTENERS =====
+// ===== EVENT LISTENERS =====
 function setupEventListeners() {
-  // Tabs de categoria
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const category = e.target.dataset.category;
-      if (category) {
-        switchCategory(category);
-      }
-    });
-  });
-
   // Adicionar produto
-  const addProductBtn = document.getElementById("btn-add-product");
-  if (addProductBtn) {
-    addProductBtn.addEventListener("click", openAddProductModal);
-  }
+  productForm.addEventListener("submit", handleAddProduct);
 
-  // Modal de produto
-  const closeModalBtn = document.getElementById("close-modal");
-  const cancelBtn = document.getElementById("cancel-product");
-  const productForm = document.getElementById("product-form");
-
-  if (closeModalBtn) {
-    closeModalBtn.addEventListener("click", closeProductModal);
-  }
-
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", closeProductModal);
-  }
-
-  if (productForm) {
-    productForm.addEventListener("submit", handleProductSubmit);
-  }
-
-  // Modal de confirmação
-  const cancelActionBtn = document.getElementById("cancel-action");
-  const confirmActionBtn = document.getElementById("confirm-action");
-
-  if (cancelActionBtn) {
-    cancelActionBtn.addEventListener("click", closeConfirmModal);
-  }
-
-  if (confirmActionBtn) {
-    confirmActionBtn.addEventListener("click", handleConfirmAction);
-  }
-
-  // Fechar modais clicando no overlay
-  document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("modal-overlay")) {
-      closeAllModals();
-    }
-  });
+  // Editar produto
+  editForm.addEventListener("submit", handleEditProduct);
 }
 
-// ===== CARREGAR DADOS INICIAIS =====
-function loadInitialData() {
-  showLoading(true);
+// ===== CARREGAR PRODUTOS =====
+function loadAdminProducts() {
+  db.collection("products")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(
+      (querySnapshot) => {
+        productList.innerHTML = "";
 
-  // Carregar produtos de todas as categorias
-  const categories = Object.keys(adminState.products);
-  const loadPromises = categories.map((category) =>
-    loadCategoryProducts(category),
-  );
-
-  Promise.all(loadPromises)
-    .then(() => {
-      updateProductStats();
-      renderCurrentCategory();
-      showToast("✅ Dados carregados com sucesso", "success");
-    })
-    .catch((error) => {
-      console.error("❌ Erro ao carregar dados:", error);
-      showToast("❌ Erro ao carregar dados", "error");
-    })
-    .finally(() => {
-      showLoading(false);
-    });
-}
-
-// ===== CARREGAR PRODUTOS DE CATEGORIA =====
-function loadCategoryProducts(category) {
-  return new Promise((resolve, reject) => {
-    firebase
-      .database()
-      .ref(`products/${category}`)
-      .once("value")
-      .then((snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          adminState.products[category] = Object.entries(data).map(
-            ([key, value]) => ({
-              id: key,
-              ...value,
-              category: category,
-            }),
-          );
-        } else {
-          adminState.products[category] = [];
+        if (querySnapshot.empty) {
+          productList.innerHTML = `
+          <div class="empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+            </svg>
+            <p>Nenhum produto cadastrado ainda.</p>
+          </div>
+        `;
+          productCount.textContent = "0 produtos";
+          return;
         }
-        console.log(
-          `✅ ${adminState.products[category].length} produtos carregados para ${category}`,
-        );
-        resolve();
-      })
-      .catch((error) => {
-        console.error(`❌ Erro ao carregar ${category}:`, error);
-        adminState.products[category] = [];
-        reject(error);
-      });
-  });
+
+        let count = 0;
+        querySnapshot.forEach((doc) => {
+          const product = { id: doc.id, ...doc.data() };
+          renderAdminProduct(product);
+          count++;
+        });
+
+        productCount.textContent = `${count} produto${count !== 1 ? "s" : ""}`;
+      },
+      (error) => {
+        console.error("Erro ao carregar produtos:", error);
+        showNotification("Erro ao carregar produtos!", "error");
+      },
+    );
 }
 
-// ===== ATUALIZAR ESTATÍSTICAS =====
-function updateProductStats() {
-  const stats = {
-    "bags-count": adminState.products.bolsas.length,
-    "backpacks-count": adminState.products.mochilas.length,
-    "wallets-count": adminState.products.carteiras.length,
-    "accessories-count": adminState.products.acessorios.length,
-  };
+// ===== RENDERIZAR PRODUTO (ADMIN) =====
+function renderAdminProduct(product) {
+  const statusClass =
+    product.status === "disponível" ? "disponivel" : "esgotado";
 
-  Object.entries(stats).forEach(([id, count]) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.textContent = count;
-    }
-  });
+  const productItem = document.createElement("div");
+  productItem.classList.add("product-item");
+  productItem.innerHTML = `
+    <img src="${product.image}" alt="${product.name}" class="product-item-image">
+    <div class="product-item-info">
+      <h4 class="product-item-name">${product.name}</h4>
+      <p class="product-item-price">R$ ${formatPrice(product.price)}</p>
+      <span class="product-item-status ${statusClass}">${product.status}</span>
+    </div>
+    <div class="product-item-actions">
+      <button class="btn-edit" onclick="openEditModal('${product.id}', '${escapeHtml(product.name)}', '${escapeHtml(product.description || "")}', ${product.price}, '${product.image}', '${product.status}')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Editar
+      </button>
+      <button class="btn-delete" onclick="confirmDelete('${product.id}', '${escapeHtml(product.name)}')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <line x1="10" y1="11" x2="10" y2="17"/>
+          <line x1="14" y1="11" x2="14" y2="17"/>
+        </svg>
+        Excluir
+      </button>
+    </div>
+  `;
+
+  productList.appendChild(productItem);
 }
 
-// ===== TROCAR CATEGORIA =====
-function switchCategory(category) {
-  if (category === adminState.currentCategory) return;
+// ===== ADICIONAR PRODUTO =====
+function handleAddProduct(e) {
+  e.preventDefault();
 
-  adminState.currentCategory = category;
+  const name = document.getElementById("product-name").value.trim();
+  const description = document
+    .getElementById("product-description")
+    .value.trim();
+  const price = parseFloat(document.getElementById("product-price").value);
+  const image = document.getElementById("product-image").value.trim();
+  const status = document.getElementById("product-status").value;
 
-  // Atualizar tabs
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.remove("active");
-    if (btn.dataset.category === category) {
-      btn.classList.add("active");
-    }
-  });
-
-  // Atualizar título
-  const titles = {
-    bolsas: "👜 Gerenciar Bolsas",
-    mochilas: "🎒 Gerenciar Mochilas",
-    carteiras: "💳 Gerenciar Carteiras",
-    acessorios: "✨ Gerenciar Acessórios",
-  };
-
-  const titleElement = document.getElementById("category-title");
-  if (titleElement) {
-    titleElement.textContent = titles[category] || "Gerenciar Produtos";
-  }
-
-  // Renderizar produtos
-  renderCurrentCategory();
-}
-
-// ===== RENDERIZAR CATEGORIA ATUAL =====
-function renderCurrentCategory() {
-  const grid = document.getElementById("admin-products-grid");
-  if (!grid) return;
-
-  const products = adminState.products[adminState.currentCategory];
-
-  if (!products || products.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">📦</div>
-        <h3>Nenhum produto encontrado</h3>
-        <p>Comece adicionando produtos para esta categoria</p>
-        <button onclick="openAddProductModal()" class="btn-add-product">
-          ➕ Adicionar Primeiro Produto
-        </button>
-      </div>
-    `;
+  // Validação
+  if (!name || !image || isNaN(price) || price < 0) {
+    showNotification("Preencha todos os campos corretamente!", "error");
     return;
   }
 
-  grid.innerHTML = products
-    .map(
-      (product) => `
-    <div class="admin-product-card">
-      <img 
-        src="${product.image || "../images/placeholder.jpg"}" 
-        alt="${product.name}"
-        class="admin-product-image"
-        onerror="this.src='../images/placeholder.jpg'"
-      />
-      <div class="admin-product-info">
-        <h3 class="admin-product-name">${product.name}</h3>
-        <p class="admin-product-price">R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}</p>
-        <span class="admin-product-category">${getCategoryIcon(product.category)} ${getCategoryName(product.category)}</span>
-        <div class="admin-product-actions">
-          <button class="btn-edit" onclick="editProduct('${product.id}')">
-            ✏️ Editar
-          </button>
-          <button class="btn-delete" onclick="deleteProduct('${product.id}')">
-            🗑️ Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  `,
-    )
-    .join("");
+  // Adicionar ao Firestore
+  db.collection("products")
+    .add({
+      name,
+      description: description || "",
+      price,
+      image,
+      status,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    })
+    .then(() => {
+      showNotification("Produto adicionado com sucesso!", "success");
+      productForm.reset();
+    })
+    .catch((error) => {
+      console.error("Erro ao adicionar produto:", error);
+      showNotification("Erro ao adicionar produto!", "error");
+    });
 }
 
-// ===== UTILITÁRIOS DE CATEGORIA =====
-function getCategoryIcon(category) {
-  const icons = {
-    bolsas: "👜",
-    mochilas: "🎒",
-    carteiras: "💳",
-    acessorios: "✨",
-  };
-  return icons[category] || "📦";
+// ===== ABRIR MODAL DE EDIÇÃO =====
+function openEditModal(id, name, description, price, image, status) {
+  document.getElementById("edit-product-id").value = id;
+  document.getElementById("edit-product-name").value = name;
+  document.getElementById("edit-product-description").value = description;
+  document.getElementById("edit-product-price").value = price;
+  document.getElementById("edit-product-image").value = image;
+  document.getElementById("edit-product-status").value = status;
+
+  editModal.classList.add("active");
 }
 
-function getCategoryName(category) {
-  const names = {
-    bolsas: "Bolsas",
-    mochilas: "Mochilas",
-    carteiras: "Carteiras",
-    acessorios: "Acessórios",
-  };
-  return names[category] || "Produto";
-}
-
-// ===== ABRIR MODAL DE PRODUTO =====
-function openAddProductModal() {
-  adminState.editingProduct = null;
-
-  const modal = document.getElementById("product-modal");
-  const form = document.getElementById("product-form");
-  const title = document.getElementById("modal-title");
-
-  if (title) {
-    title.textContent = "➕ Adicionar Produto";
-  }
-
-  if (form) {
-    form.reset();
-    document.getElementById("product-category").value =
-      adminState.currentCategory;
-  }
-
-  if (modal) {
-    modal.style.display = "flex";
-  }
+// ===== FECHAR MODAL DE EDIÇÃO =====
+function closeEditModal() {
+  editModal.classList.remove("active");
+  editForm.reset();
 }
 
 // ===== EDITAR PRODUTO =====
-function editProduct(productId) {
-  const product = findProductById(productId);
-  if (!product) {
-    showToast("❌ Produto não encontrado", "error");
+function handleEditProduct(e) {
+  e.preventDefault();
+
+  const id = document.getElementById("edit-product-id").value;
+  const name = document.getElementById("edit-product-name").value.trim();
+  const description = document
+    .getElementById("edit-product-description")
+    .value.trim();
+  const price = parseFloat(document.getElementById("edit-product-price").value);
+  const image = document.getElementById("edit-product-image").value.trim();
+  const status = document.getElementById("edit-product-status").value;
+
+  // Validação
+  if (!name || !image || isNaN(price) || price < 0) {
+    showNotification("Preencha todos os campos corretamente!", "error");
     return;
   }
 
-  adminState.editingProduct = product;
+  // Atualizar no Firestore
+  db.collection("products")
+    .doc(id)
+    .update({
+      name,
+      description: description || "",
+      price,
+      image,
+      status,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    })
+    .then(() => {
+      showNotification("Produto atualizado com sucesso!", "success");
+      closeEditModal();
+    })
+    .catch((error) => {
+      console.error("Erro ao atualizar produto:", error);
+      showNotification("Erro ao atualizar produto!", "error");
+    });
+}
 
-  const modal = document.getElementById("product-modal");
-  const title = document.getElementById("modal-title");
-
-  if (title) {
-    title.textContent = "✏️ Editar Produto";
-  }
-
-  // Preencher formulário
-  document.getElementById("product-name").value = product.name || "";
-  document.getElementById("product-price").value = product.price || "";
-  document.getElementById("product-category").value = product.category || "";
-  document.getElementById("product-description").value =
-    product.description || "";
-  document.getElementById("product-image").value = product.image || "";
-
-  if (modal) {
-    modal.style.display = "flex";
+// ===== CONFIRMAR EXCLUSÃO =====
+function confirmDelete(id, name) {
+  if (confirm(`Tem certeza que deseja excluir "${name}"?`)) {
+    deleteProduct(id);
   }
 }
 
 // ===== EXCLUIR PRODUTO =====
-function deleteProduct(productId) {
-  const product = findProductById(productId);
-  if (!product) {
-    showToast("❌ Produto não encontrado", "error");
-    return;
-  }
-
-  // Configurar modal de confirmação
-  const confirmModal = document.getElementById("confirm-modal");
-  const confirmMessage = document.getElementById("confirm-message");
-
-  if (confirmMessage) {
-    confirmMessage.textContent = `Tem certeza que deseja excluir "${product.name}"?`;
-  }
-
-  // Configurar ação de confirmação
-  window.pendingAction = {
-    type: "delete",
-    productId: productId,
-    category: product.category,
-  };
-
-  if (confirmModal) {
-    confirmModal.style.display = "flex";
-  }
-}
-
-// ===== SUBMETER FORMULÁRIO DE PRODUTO =====
-function handleProductSubmit(event) {
-  event.preventDefault();
-
-  const formData = {
-    name: document.getElementById("product-name").value.trim(),
-    price: parseFloat(document.getElementById("product-price").value),
-    category: document.getElementById("product-category").value,
-    description: document.getElementById("product-description").value.trim(),
-    image: document.getElementById("product-image").value.trim(),
-    available: true,
-    featured: false,
-    updatedAt: new Date().toISOString(),
-  };
-
-  // Validações
-  if (!formData.name || !formData.price || !formData.category) {
-    showToast("❌ Por favor, preencha todos os campos obrigatórios", "error");
-    return;
-  }
-
-  if (formData.price <= 0) {
-    showToast("❌ O preço deve ser maior que zero", "error");
-    return;
-  }
-
-  showLoading(true);
-
-  if (adminState.editingProduct) {
-    // Editar produto existente
-    updateProduct(adminState.editingProduct.id, formData);
-  } else {
-    // Criar novo produto
-    createProduct(formData);
-  }
-}
-
-// ===== CRIAR PRODUTO =====
-function createProduct(productData) {
-  const category = productData.category;
-  const newProductRef = firebase.database().ref(`products/${category}`).push();
-
-  newProductRef
-    .set(productData)
+function deleteProduct(id) {
+  db.collection("products")
+    .doc(id)
+    .delete()
     .then(() => {
-      console.log("✅ Produto criado com sucesso");
-      showToast("✅ Produto adicionado com sucesso!", "success");
-
-      // Recarregar categoria
-      loadCategoryProducts(category).then(() => {
-        updateProductStats();
-        renderCurrentCategory();
-      });
-
-      closeProductModal();
+      showNotification("Produto excluído com sucesso!", "success");
     })
     .catch((error) => {
-      console.error("❌ Erro ao criar produto:", error);
-      showToast("❌ Erro ao adicionar produto", "error");
-    })
-    .finally(() => {
-      showLoading(false);
+      console.error("Erro ao excluir produto:", error);
+      showNotification("Erro ao excluir produto!", "error");
     });
 }
 
-// ===== ATUALIZAR PRODUTO =====
-function updateProduct(productId, productData) {
-  const category = productData.category;
-
-  firebase
-    .database()
-    .ref(`products/${category}/${productId}`)
-    .update(productData)
-    .then(() => {
-      console.log("✅ Produto atualizado com sucesso");
-      showToast("✅ Produto atualizado com sucesso!", "success");
-
-      // Recarregar categoria
-      loadCategoryProducts(category).then(() => {
-        updateProductStats();
-        renderCurrentCategory();
-      });
-
-      closeProductModal();
-    })
-    .catch((error) => {
-      console.error("❌ Erro ao atualizar produto:", error);
-      showToast("❌ Erro ao atualizar produto", "error");
-    })
-    .finally(() => {
-      showLoading(false);
-    });
+// ===== FUNÇÕES UTILITÁRIAS =====
+function formatPrice(price) {
+  return price.toFixed(2).replace(".", ",");
 }
 
-// ===== CONFIRMAR AÇÃO =====
-function handleConfirmAction() {
-  if (!window.pendingAction) return;
-
-  const action = window.pendingAction;
-
-  if (action.type === "delete") {
-    showLoading(true);
-
-    firebase
-      .database()
-      .ref(`products/${action.category}/${action.productId}`)
-      .remove()
-      .then(() => {
-        console.log("✅ Produto excluído com sucesso");
-        showToast("✅ Produto excluído com sucesso!", "success");
-
-        // Recarregar categoria
-        loadCategoryProducts(action.category).then(() => {
-          updateProductStats();
-          renderCurrentCategory();
-        });
-      })
-      .catch((error) => {
-        console.error("❌ Erro ao excluir produto:", error);
-        showToast("❌ Erro ao excluir produto", "error");
-      })
-      .finally(() => {
-        showLoading(false);
-      });
-  }
-
-  closeConfirmModal();
-  window.pendingAction = null;
+function escapeHtml(text) {
+  return text.replace(/'/g, "\\'").replace(/"/g, "&quot;");
 }
 
-// ===== FECHAR MODAIS =====
-function closeProductModal() {
-  const modal = document.getElementById("product-modal");
-  if (modal) {
-    modal.style.display = "none";
-  }
-  adminState.editingProduct = null;
-}
+function showNotification(message, type = "success") {
+  const bgColor = type === "success" ? "#2d6a4f" : "#dc3545";
 
-function closeConfirmModal() {
-  const modal = document.getElementById("confirm-modal");
-  if (modal) {
-    modal.style.display = "none";
-  }
-}
-
-function closeAllModals() {
-  closeProductModal();
-  closeConfirmModal();
-}
-
-// ===== UTILITÁRIOS =====
-function findProductById(productId) {
-  for (const category in adminState.products) {
-    const product = adminState.products[category].find(
-      (p) => p.id === productId,
-    );
-    if (product) return product;
-  }
-  return null;
-}
-
-function showLoading(show) {
-  const overlay = document.getElementById("loading-overlay");
-  if (overlay) {
-    overlay.style.display = show ? "flex" : "none";
-  }
-  adminState.isLoading = show;
-}
-
-function showToast(message, type = "info") {
-  const container = document.getElementById("toast-container");
-  if (!container) {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    return;
-  }
-
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <div style="font-weight: 600; margin-bottom: 5px;">${getToastIcon(type)} ${getToastTitle(type)}</div>
-    <div>${message}</div>
+  const notification = document.createElement("div");
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: ${bgColor};
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 10000;
+    animation: slideUp 0.3s ease;
+    font-weight: 500;
   `;
+  notification.textContent = message;
 
-  container.appendChild(toast);
+  document.body.appendChild(notification);
 
-  // Remover após 5 segundos
   setTimeout(() => {
-    toast.remove();
-  }, 5000);
+    notification.style.animation = "slideDown 0.3s ease";
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
-function getToastIcon(type) {
-  const icons = {
-    success: "✅",
-    error: "❌",
-    warning: "⚠️",
-    info: "ℹ️",
-  };
-  return icons[type] || "ℹ️";
-}
-
-function getToastTitle(type) {
-  const titles = {
-    success: "Sucesso",
-    error: "Erro",
-    warning: "Aviso",
-    info: "Informação",
-  };
-  return titles[type] || "Informação";
-}
-
-// ===== EXPORTAR FUNÇÕES GLOBAIS =====
-window.editProduct = editProduct;
-window.deleteProduct = deleteProduct;
-window.openAddProductModal = openAddProductModal;
-
-console.log("👜 Sistema administrativo da Léuria carregado");
+// Adicionar animações CSS
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes slideDown {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(100px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
