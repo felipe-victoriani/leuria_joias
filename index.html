@@ -5,245 +5,225 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Leuria - Joias e Bolsas exclusivas. Elegância e sofisticação em cada peça."
+      content="Semijoias elegantes e sofisticadas. Descubra nossa coleção exclusiva."
     />
-    <title>Leuria | Joias e Bolsas Exclusivas</title>
-    <link rel="stylesheet" href="css/styles.css" />
+    <title>leuria Jara | Elegância em Cada Detalhe</title>
 
-    <!-- Google Fonts - Fontes Elegantes -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <!-- Header Fixo -->
+    <!-- Header -->
     <header class="header">
-      <div class="container header-content">
-        <h1 class="logo">LEURIA JARA</h1>
-        <nav class="nav">
-          <button class="btn-cart" id="btn-cart" aria-label="Abrir carrinho">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="9" cy="21" r="1" />
-              <circle cx="20" cy="21" r="1" />
-              <path
-                d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
-              />
-            </svg>
-            <span class="cart-count" id="cart-count">0</span>
-          </button>
-        </nav>
+      <div class="container">
+        <div class="header-content">
+          <div class="logo">
+            <h1>
+              <span class="logo-letter">L</span>EURIA
+              <span class="logo-letter">J</span>ARA
+            </h1>
+            <p class="tagline">Elegância Atemporal</p>
+          </div>
+
+          <nav class="nav">
+            <a href="#colecao" class="btn-nav">Ver Coleção</a>
+            <button class="cart-btn" id="cartBtn">
+              <i class="fas fa-shopping-bag"></i>
+              <span class="cart-count" id="cartCount">0</span>
+            </button>
+          </nav>
+        </div>
       </div>
     </header>
 
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-overlay"></div>
-      <div class="hero-content fade-in">
-        <h2 class="hero-title">Elegância Atemporal</h2>
-        <p class="hero-subtitle">
-          Descubra nossa coleção exclusiva de joias e bolsas
-        </p>
-        <button class="btn-hero" onclick="scrollToProducts()">
-          Explorar Coleção
-        </button>
+      <div class="hero-lights">
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+        <span class="light"></span>
+      </div>
+      <div class="hero-content"></div>
+      <div class="hero-scroll">
+        <i class="fas fa-chevron-down"></i>
       </div>
     </section>
 
-    <!-- Seção de Produtos -->
-    <section class="products" id="products-section">
+    <!-- Sobre -->
+    <section class="about">
       <div class="container">
-        <div class="section-header">
-          <h2 class="section-title">Nossa Coleção</h2>
-          <p class="section-subtitle">Peças selecionadas para você</p>
+        <div class="about-content fade-in-scroll">
+          <h2 class="section-title">Sobre Nós</h2>
+          <p class="about-text">
+            Cada peça é cuidadosamente selecionada para você que aprecia
+            elegância e sofisticação. Transformamos momentos especiais em
+            memórias inesquecíveis com semijoias de alta qualidade.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coleção de Produtos -->
+    <section class="collection" id="colecao">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Nossa Coleção</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Peças exclusivas para realçar sua beleza
+        </p>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p>Carregando produtos...</p>
         </div>
 
         <!-- Grid de Produtos -->
-        <div class="product-grid" id="product-grid">
-          <!-- Cards de Exemplo (serão substituídos pelos produtos do Firebase) -->
-          <div class="product">
-            <div class="product-image-wrapper">
+        <div class="products-grid" id="productsGrid">
+          <!-- Produtos de Exemplo -->
+          <div class="product-card fade-in-scroll">
+            <div class="product-image-container">
               <img
-                src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500"
-                alt="Colar de Pérolas"
+                src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&q=80"
+                alt="Colar Elegance"
                 class="product-image"
-                loading="lazy"
               />
             </div>
             <div class="product-info">
-              <h3 class="product-name">Colar de Pérolas Clássico</h3>
+              <h3 class="product-name">Colar Elegance</h3>
               <p class="product-description">
-                Elegância atemporal com pérolas naturais
+                Colar delicado em banho de ouro com pingente de coração
               </p>
-              <p class="product-price">R$ 289,90</p>
-              <button
-                class="btn-add-cart"
-                onclick="
-                  addToCart(
-                    'prod-1',
-                    'Colar de Pérolas Clássico',
-                    289.9,
-                    'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500',
-                  )
-                "
-              >
+              <p class="product-price">R$ 89,90</p>
+              <button class="btn-add-cart" onclick="addToCart('produto-1')">
+                <i class="fas fa-shopping-cart"></i>
                 Adicionar ao Carrinho
               </button>
             </div>
           </div>
 
-          <div class="product">
-            <div class="product-image-wrapper">
+          <div class="product-card fade-in-scroll">
+            <div class="product-image-container">
               <img
-                src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500"
-                alt="Brinco de Cristal"
+                src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80"
+                alt="Brinco Luxo"
                 class="product-image"
-                loading="lazy"
               />
             </div>
             <div class="product-info">
-              <h3 class="product-name">Brinco de Cristal</h3>
+              <h3 class="product-name">Brinco Luxo</h3>
               <p class="product-description">
-                Brilho sofisticado para ocasiões especiais
+                Par de brincos em argola com detalhes em cristal
               </p>
-              <p class="product-price">R$ 189,90</p>
-              <button
-                class="btn-add-cart"
-                onclick="
-                  addToCart(
-                    'prod-2',
-                    'Brinco de Cristal',
-                    189.9,
-                    'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500',
-                  )
-                "
-              >
+              <p class="product-price">R$ 69,90</p>
+              <button class="btn-add-cart" onclick="addToCart('produto-2')">
+                <i class="fas fa-shopping-cart"></i>
                 Adicionar ao Carrinho
               </button>
             </div>
           </div>
 
-          <div class="product">
-            <div class="product-image-wrapper">
+          <div class="product-card fade-in-scroll">
+            <div class="product-image-container">
               <img
-                src="https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=500"
-                alt="Bolsa de Couro"
+                src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80"
+                alt="Pulseira Sofisticada"
                 class="product-image"
-                loading="lazy"
               />
             </div>
             <div class="product-info">
-              <h3 class="product-name">Bolsa de Couro Premium</h3>
+              <h3 class="product-name">Pulseira Sofisticada</h3>
               <p class="product-description">
-                Couro legítimo com acabamento artesanal
+                Pulseira elo português folheada a ouro 18k
               </p>
-              <p class="product-price">R$ 599,90</p>
-              <button
-                class="btn-add-cart"
-                onclick="
-                  addToCart(
-                    'prod-3',
-                    'Bolsa de Couro Premium',
-                    599.9,
-                    'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=500',
-                  )
-                "
-              >
+              <p class="product-price">R$ 129,90</p>
+              <button class="btn-add-cart" onclick="addToCart('produto-3')">
+                <i class="fas fa-shopping-cart"></i>
                 Adicionar ao Carrinho
               </button>
             </div>
           </div>
 
-          <div class="product">
-            <div class="product-image-wrapper">
+          <div class="product-card fade-in-scroll">
+            <div class="product-image-container">
               <img
-                src="https://images.unsplash.com/photo-1603561596112-0a132b757442?w=500"
-                alt="Anel Solitário"
+                src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&q=80"
+                alt="Anel Clássico"
                 class="product-image"
-                loading="lazy"
               />
-              <span class="product-badge sold-out">Esgotado</span>
+              <span class="product-badge">Esgotado</span>
             </div>
             <div class="product-info">
-              <h3 class="product-name">Anel Solitário</h3>
-              <p class="product-description">Design minimalista e elegante</p>
-              <p class="product-price">R$ 349,90</p>
-              <button class="btn-add-cart" disabled>Indisponível</button>
+              <h3 class="product-name">Anel Clássico</h3>
+              <p class="product-description">
+                Anel solitário com zircônia cravejada
+              </p>
+              <p class="product-price">R$ 79,90</p>
+              <button class="btn-add-cart" disabled>
+                <i class="fas fa-shopping-cart"></i>
+                Esgotado
+              </button>
             </div>
           </div>
 
-          <div class="product">
-            <div class="product-image-wrapper">
+          <div class="product-card fade-in-scroll">
+            <div class="product-image-container">
               <img
-                src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500"
-                alt="Pulseira Dourada"
+                src="https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=500&q=80"
+                alt="Conjunto Premium"
                 class="product-image"
-                loading="lazy"
               />
             </div>
             <div class="product-info">
-              <h3 class="product-name">Pulseira Dourada</h3>
+              <h3 class="product-name">Conjunto Premium</h3>
               <p class="product-description">
-                Delicadeza e charme em um design único
+                Conjunto colar e brinco com pedras naturais
               </p>
               <p class="product-price">R$ 159,90</p>
-              <button
-                class="btn-add-cart"
-                onclick="
-                  addToCart(
-                    'prod-5',
-                    'Pulseira Dourada',
-                    159.9,
-                    'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500',
-                  )
-                "
-              >
+              <button class="btn-add-cart" onclick="addToCart('produto-5')">
+                <i class="fas fa-shopping-cart"></i>
                 Adicionar ao Carrinho
               </button>
             </div>
           </div>
 
-          <div class="product">
-            <div class="product-image-wrapper">
+          <div class="product-card fade-in-scroll">
+            <div class="product-image-container">
               <img
-                src="https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=500"
-                alt="Bolsa Mini"
+                src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&q=80"
+                alt="Tornozeleira Delicada"
                 class="product-image"
-                loading="lazy"
               />
             </div>
             <div class="product-info">
-              <h3 class="product-name">Bolsa Mini Luxo</h3>
+              <h3 class="product-name">Tornozeleira Delicada</h3>
               <p class="product-description">
-                Compacta e versátil para o dia a dia
+                Tornozeleira fina com pingentes em formato de estrela
               </p>
-              <p class="product-price">R$ 399,90</p>
-              <button
-                class="btn-add-cart"
-                onclick="
-                  addToCart(
-                    'prod-6',
-                    'Bolsa Mini Luxo',
-                    399.9,
-                    'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=500',
-                  )
-                "
-              >
+              <p class="product-price">R$ 49,90</p>
+              <button class="btn-add-cart" onclick="addToCart('produto-6')">
+                <i class="fas fa-shopping-cart"></i>
                 Adicionar ao Carrinho
               </button>
             </div>
@@ -253,176 +233,75 @@
     </section>
 
     <!-- Carrinho Lateral -->
-    <div class="cart-overlay" id="cart-overlay"></div>
-    <aside class="cart" id="cart">
+    <div class="cart-sidebar" id="cartSidebar">
       <div class="cart-header">
-        <h3 class="cart-title">Seu Carrinho</h3>
-        <button
-          class="btn-close-cart"
-          id="btn-close-cart"
-          aria-label="Fechar carrinho"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+        <h3>Meu Carrinho</h3>
+        <button class="cart-close" id="cartClose">
+          <i class="fas fa-times"></i>
         </button>
       </div>
 
-      <div class="cart-body">
-        <ul class="cart-items" id="cart-items">
-          <!-- Itens do carrinho -->
-        </ul>
-
-        <div class="cart-empty" id="cart-empty">
-          <svg
-            width="64"
-            height="64"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              d="M9 2L7.17 5H2v2h1l1.68 9.39C4.78 17.28 5.81 18 7 18h10c1.19 0 2.22-.72 2.32-1.61L21 7h1V5h-5.17L15 2H9z"
-            />
-          </svg>
+      <div class="cart-body" id="cartBody">
+        <!-- Itens do carrinho serão inseridos aqui -->
+        <div class="cart-empty" id="cartEmpty">
+          <i class="fas fa-shopping-bag"></i>
           <p>Seu carrinho está vazio</p>
         </div>
       </div>
 
-      <div class="cart-footer">
+      <div class="cart-footer" id="cartFooter">
         <div class="cart-total">
           <span>Total:</span>
-          <span class="cart-total-value" id="cart-total">R$ 0,00</span>
+          <span class="total-price" id="totalPrice">R$ 0,00</span>
         </div>
-        <button class="btn-checkout" id="btn-checkout">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"
-            />
-          </svg>
+        <button class="btn-whatsapp" id="btnWhatsapp">
+          <i class="fab fa-whatsapp"></i>
           Finalizar via WhatsApp
         </button>
       </div>
-    </aside>
+    </div>
 
-    <!-- Seção de Contatos -->
-    <section class="contact" id="contact-section">
-      <div class="container">
-        <div class="section-header">
-          <h2 class="section-title">Entre em Contato</h2>
-          <p class="section-subtitle">Estamos aqui para atendê-la</p>
-        </div>
-
-        <div class="contact-grid">
-          <!-- Contatos em linha -->
-          <div class="contact-row">
-            <span class="contact-inline">
-              <span class="contact-icon">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <path
-                    d="M3 5a2 2 0 0 1 2-2h3.28a1 1 0 0 1 .948.684l1.498 4.493a1 1 0 0 1-.502 1.21l-2.257 1.13a11.042 11.042 0 0 0 5.516 5.516l1.13-2.257a1 1 0 0 1 1.21-.502l4.493 1.498a1 1 0 0 1 .684.949V19a2 2 0 0 1-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-              </span>
-              <span class="contact-inline-label">WhatsApp:</span>
-              <a
-                href="https://wa.me/5511999999999"
-                target="_blank"
-                class="contact-link"
-                >(11) 99999-9999</a
-              >
-            </span>
-            <span class="contact-inline">
-              <span class="contact-icon">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <path
-                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                  />
-                </svg>
-              </span>
-              <span class="contact-inline-label">Localização:</span>
-              <span class="contact-text">São Paulo, SP</span>
-            </span>
-            <span class="contact-inline">
-              <span class="contact-icon">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 6v6l4 2" />
-                </svg>
-              </span>
-              <span class="contact-inline-label">Atendimento:</span>
-              <span class="contact-text">Seg-Sex 9h-18h, Sáb 9h-13h</span>
-            </span>
-          </div>
-
-          <!-- Instagram -->
-          <div class="contact-social">
-            <h3 class="social-title">Siga no Instagram</h3>
-            <p class="social-subtitle">
-              Fique por dentro das novidades e lançamentos exclusivos
-            </p>
-
-            <a
-              href="https://instagram.com/leuriajara"
-              target="_blank"
-              class="social-link-large"
-              aria-label="Instagram"
-            >
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path
-                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
-                />
-              </svg>
-              <span>@leuriajara</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- Overlay do Carrinho -->
+    <div class="cart-overlay" id="cartOverlay"></div>
 
     <!-- Footer -->
     <footer class="footer">
       <div class="container">
-        <p>&copy; 2026 Leuria. Todos os direitos reservados.</p>
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>LEURIA JARA</h3>
+            <p>Elegância e sofisticação em cada detalhe.</p>
+          </div>
+
+          <div class="footer-section">
+            <h4>Contato</h4>
+            <p>
+              <a href="https://wa.me/5567984571451" target="_blank">
+                <i class="fab fa-whatsapp"></i> (67) 98457-1451
+              </a>
+            </p>
+          </div>
+
+          <div class="footer-section">
+            <h4>Redes Sociais</h4>
+            <div class="social-links">
+              <a
+                href="https://www.instagram.com/leuriajaraacessorios?igsh=MXVxMDN5Y3RhOHdmbg%3D%3D&utm_source=qr"
+                target="_blank"
+                ><i class="fab fa-instagram"></i
+              ></a>
+            </div>
+          </div>
+        </div>
       </div>
     </footer>
 
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <!-- Scripts -->
-    <script src="js/firebase-config.js"></script>
-    <script src="js/script.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>
