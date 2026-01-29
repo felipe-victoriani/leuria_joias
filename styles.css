@@ -927,13 +927,16 @@ a {
 
   .hero {
     height: 90vh;
-    background-size: cover;
+    background-size: contain;
     background-position: center center;
+    background-repeat: no-repeat;
+    background-color: var(--color-marble);
   }
 
   .hero::before {
-    background-size: cover;
+    background-size: contain;
     background-position: center center;
+    background-repeat: no-repeat;
   }
 
   .products-grid {
