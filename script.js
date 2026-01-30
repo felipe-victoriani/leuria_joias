@@ -518,7 +518,7 @@ function setupScrollAnimations() {
 // ========================================
 
 console.log(
-  "%c✨ Taty Joias %c- Elegância em Cada Detalhe",
+  "%c✨ leuria_semi - Loja de Semi Joias ✨",
   "color: #D4AF37; font-size: 20px; font-weight: bold;",
   "color: #666; font-size: 14px;",
 );
