@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Área Administrativa - Léuria Jara</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --color-white: #ffffff;
+        --color-marble: #faf8f5;
+        --color-gold: #b8941f;
+        --color-gold-light: #d4af37;
+        --color-gold-dark: #9a7a1a;
+        --color-green: #2d5016;
+        --color-green-light: #4a7c2c;
+        --color-green-dark: #1e3a0f;
+        --color-black: #1a1a1a;
+        --color-gray: #5a5a5a;
+        --color-gray-light: #e5e5e5;
+        --font-primary: "Playfair Display", serif;
+        --font-secondary: "Montserrat", sans-serif;
+        --spacing-sm: 1rem;
+        --spacing-md: 2rem;
+        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-secondary);
+        background: linear-gradient(
+          135deg,
+          var(--color-green-dark),
+          var(--color-green)
+        );
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-sm);
+      }
+
+      .admin-container {
+        width: 100%;
+        max-width: 450px;
+      }
+
+      .admin-card {
+        background: var(--color-white);
+        border-radius: 16px;
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow-md);
+      }
+
+      .admin-header {
+        text-align: center;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .admin-header h1 {
+        font-family: var(--font-primary);
+        color: var(--color-green-dark);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .admin-header .logo-accent {
+        color: var(--color-gold);
+      }
+
+      .admin-header p {
+        color: var(--color-gray);
+        font-size: 0.95rem;
+      }
+
+      .lock-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(
+          135deg,
+          var(--color-gold),
+          var(--color-gold-light)
+        );
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto var(--spacing-sm);
+        color: var(--color-white);
+        font-size: 2rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group label {
+        display: block;
+        color: var(--color-green-dark);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 0.9rem 1rem;
+        border: 2px solid var(--color-gray-light);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: var(--font-secondary);
+        transition: var(--transition);
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--color-gold);
+        box-shadow: 0 0 0 3px rgba(184, 148, 31, 0.1);
+      }
+
+      .btn-login {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(
+          135deg,
+          var(--color-gold),
+          var(--color-gold-light)
+        );
+        color: var(--color-white);
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(184, 148, 31, 0.3);
+      }
+
+      .btn-login:active {
+        transform: translateY(0);
+      }
+
+      .back-link {
+        text-align: center;
+        margin-top: var(--spacing-sm);
+      }
+
+      .back-link a {
+        color: var(--color-white);
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        opacity: 0.9;
+        transition: var(--transition);
+      }
+
+      .back-link a:hover {
+        opacity: 1;
+        gap: 0.7rem;
+      }
+
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 0.8rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: none;
+        font-size: 0.9rem;
+        border-left: 4px solid #c33;
+      }
+
+      .error-message.show {
+        display: block;
+      }
+
+      @media (max-width: 480px) {
+        .admin-header h1 {
+          font-size: 1.6rem;
+        }
+
+        .lock-icon {
+          width: 60px;
+          height: 60px;
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-container">
+      <div class="admin-card">
+        <div class="admin-header">
+          <div class="lock-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h1>
+            <span class="logo-accent">L</span>ÉURIA
+            <span class="logo-accent">J</span>ARA
+          </h1>
+          <p>Área Administrativa</p>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+          Usuário ou senha incorretos
+        </div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="username"> <i class="fas fa-user"></i> Usuário </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Digite seu usuário"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password"> <i class="fas fa-key"></i> Senha </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Digite sua senha"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-login">
+            <i class="fas fa-sign-in-alt"></i>
+            Entrar
+          </button>
+        </form>
+      </div>
+
+      <div class="back-link">
+        <a href="index.html">
+          <i class="fas fa-arrow-left"></i>
+          Voltar para o site
+        </a>
+      </div>
+    </div>
+
+    <script>
+      const loginForm = document.getElementById("loginForm");
+      const errorMessage = document.getElementById("errorMessage");
+
+      loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        // Credenciais temporárias (IMPORTANTE: Isso é apenas para demonstração)
+        // Em produção, use autenticação segura no backend
+        if (username === "admin" && password === "leuriajara2026") {
+          // Login bem-sucedido
+          sessionStorage.setItem("adminLoggedIn", "true");
+          window.location.href = "dashboard.html";
+        } else {
+          // Mostrar erro
+          errorMessage.classList.add("show");
+
+          // Esconder erro após 3 segundos
+          setTimeout(() => {
+            errorMessage.classList.remove("show");
+          }, 3000);
+
+          // Limpar campos
+          document.getElementById("password").value = "";
+        }
+      });
+
+      // Verificar se já está logado
+      if (sessionStorage.getItem("adminLoggedIn") === "true") {
+        window.location.href = "dashboard.html";
+      }
+    </script>
+  </body>
+</html>

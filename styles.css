@@ -831,10 +831,41 @@ a {
 }
 
 .footer-bottom {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding-top: var(--spacing-md);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--color-gray-light);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.footer-bottom p {
+  margin: 0;
+}
+
+.admin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-gray-light);
+  text-decoration: none;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  transition: var(--transition);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+.admin-link:hover {
+  opacity: 1;
+  color: var(--color-gold);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-link i {
+  font-size: 0.9rem;
 }
 
 /* ========================================
@@ -880,6 +911,11 @@ a {
 
   .footer-content {
     grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
     text-align: center;
   }
 

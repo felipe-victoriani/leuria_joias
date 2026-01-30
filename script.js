@@ -3,62 +3,77 @@
 // ========================================
 
 let cart = [];
-let products = [
-  {
-    id: "produto-1",
-    nome: "Colar Elegance",
-    descricao: "Colar delicado em banho de ouro com pingente de coração",
-    preco: 89.9,
-    imagem:
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&q=80",
-    status: "disponivel",
-  },
-  {
-    id: "produto-2",
-    nome: "Brinco Luxo",
-    descricao: "Par de brincos em argola com detalhes em cristal",
-    preco: 69.9,
-    imagem:
-      "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80",
-    status: "disponivel",
-  },
-  {
-    id: "produto-3",
-    nome: "Pulseira Sofisticada",
-    descricao: "Pulseira elo português folheada a ouro 18k",
-    preco: 129.9,
-    imagem:
-      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80",
-    status: "disponivel",
-  },
-  {
-    id: "produto-4",
-    nome: "Anel Clássico",
-    descricao: "Anel solitário com zircônia cravejada",
-    preco: 79.9,
-    imagem:
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&q=80",
-    status: "esgotado",
-  },
-  {
-    id: "produto-5",
-    nome: "Conjunto Premium",
-    descricao: "Conjunto colar e brinco com pedras naturais",
-    preco: 159.9,
-    imagem:
-      "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=500&q=80",
-    status: "disponivel",
-  },
-  {
-    id: "produto-6",
-    nome: "Tornozeleira Delicada",
-    descricao: "Tornozeleira fina com pingentes em formato de estrela",
-    preco: 49.9,
-    imagem:
-      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&q=80",
-    status: "disponivel",
-  },
-];
+let products = [];
+
+// ========================================
+// CARREGAR PRODUTOS DO DASHBOARD
+// ========================================
+
+/**
+ * Carrega produtos salvos pelo dashboard admin
+ */
+function loadProductsFromDashboard() {
+  try {
+    const savedProducts = localStorage.getItem("products");
+    if (savedProducts) {
+      const dashboardProducts = JSON.parse(savedProducts);
+
+      // Converte formato do dashboard para formato do site
+      products = dashboardProducts.map((product) => ({
+        id: `produto-${product.id}`,
+        nome: product.name,
+        descricao: product.description,
+        preco: product.price,
+        imagem: product.image,
+        status: product.outOfStock ? "esgotado" : "disponivel",
+      }));
+
+      console.log(`${products.length} produtos carregados do dashboard`);
+    } else {
+      // Se não houver produtos, usa produtos de exemplo
+      products = getExampleProducts();
+      console.log("Usando produtos de exemplo");
+    }
+  } catch (error) {
+    console.error("Erro ao carregar produtos:", error);
+    products = getExampleProducts();
+  }
+}
+
+/**
+ * Produtos de exemplo (fallback)
+ */
+function getExampleProducts() {
+  return [
+    {
+      id: "produto-exemplo-1",
+      nome: "Colar Elegance",
+      descricao: "Colar delicado em banho de ouro com pingente de coração",
+      preco: 89.9,
+      imagem:
+        "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&q=80",
+      status: "disponivel",
+    },
+    {
+      id: "produto-exemplo-2",
+      nome: "Brinco Luxo",
+      descricao: "Par de brincos em argola com detalhes em cristal",
+      preco: 69.9,
+      imagem:
+        "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80",
+      status: "disponivel",
+    },
+    {
+      id: "produto-exemplo-3",
+      nome: "Pulseira Sofisticada",
+      descricao: "Pulseira elo português folheada a ouro 18k",
+      preco: 129.9,
+      imagem:
+        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80",
+      status: "disponivel",
+    },
+  ];
+}
 
 // ========================================
 // CARRINHO - FUNÇÕES GLOBAIS
@@ -133,7 +148,14 @@ document.addEventListener("DOMContentLoaded", () => {
  */
 async function initializeApp() {
   try {
-    showLoading(false); // Desativa o loading para mostrar os produtos de exemplo
+    showLoading(false); // Desativa o loading para mostrar os produtos
+
+    // Carrega produtos do dashboard admin
+    loadProductsFromDashboard();
+
+    // Renderiza os produtos na página
+    renderProducts(products);
+
     // await loadProductsFromFirebase(); // Comentado temporariamente - descomentar após configurar Firebase
     loadCartFromStorage();
     updateCartUI();
@@ -155,6 +177,15 @@ function setupEventListeners() {
   document
     .getElementById("btnWhatsapp")
     .addEventListener("click", sendToWhatsApp);
+
+  // Detecta mudanças no localStorage (produtos adicionados no dashboard)
+  window.addEventListener("storage", (e) => {
+    if (e.key === "products") {
+      console.log("Produtos atualizados no dashboard, recarregando...");
+      loadProductsFromDashboard();
+      renderProducts(products);
+    }
+  });
 
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
@@ -491,4 +522,3 @@ console.log(
   "color: #D4AF37; font-size: 20px; font-weight: bold;",
   "color: #666; font-size: 14px;",
 );
-
