@@ -141,6 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeApp();
   setupEventListeners();
   setupScrollAnimations();
+  initMobileMenu();
 });
 
 /**
@@ -522,3 +523,88 @@ console.log(
   "color: #D4AF37; font-size: 20px; font-weight: bold;",
   "color: #666; font-size: 14px;",
 );
+
+// ========================================
+// MENU HAMBÚRGUER MOBILE
+// ========================================
+
+/**
+ * Inicializa o menu hambúrguer para dispositivos móveis
+ */
+function initMobileMenu() {
+  const mobileMenuToggle = document.getElementById("mobileMenuToggle");
+  const mobileMenu = document.getElementById("mobileMenu");
+  const mobileMenuItems = document.querySelectorAll(".mobile-menu-item");
+
+  if (mobileMenuToggle && mobileMenu) {
+    // Toggle do menu
+    mobileMenuToggle.addEventListener("click", function () {
+      mobileMenu.classList.toggle("active");
+
+      // Animação elegante do hambúrguer para X
+      const lines = mobileMenuToggle.querySelectorAll(".hamburger-line");
+      if (mobileMenu.classList.contains("active")) {
+        // Transformação para X com animação mais elegante
+        lines[0].style.transform = "rotate(45deg) translate(4px, 4px)";
+        lines[0].style.background =
+          "linear-gradient(90deg, var(--color-gold-light), var(--color-gold))";
+        lines[1].style.opacity = "0";
+        lines[1].style.transform = "scale(0)";
+        lines[2].style.transform = "rotate(-45deg) translate(6px, -5px)";
+        lines[2].style.background =
+          "linear-gradient(90deg, var(--color-gold-light), var(--color-gold))";
+
+        // Adiciona um pequeno bounce ao botão
+        mobileMenuToggle.style.transform = "scale(1.1)";
+        setTimeout(() => {
+          mobileMenuToggle.style.transform = "scale(1)";
+        }, 200);
+      } else {
+        // Volta ao estado normal
+        lines[0].style.transform = "none";
+        lines[0].style.background =
+          "linear-gradient(90deg, var(--color-gold), var(--color-gold-light))";
+        lines[1].style.opacity = "1";
+        lines[1].style.transform = "none";
+        lines[2].style.transform = "none";
+        lines[2].style.background =
+          "linear-gradient(90deg, var(--color-gold), var(--color-gold-light))";
+      }
+    });
+
+    // Fechar menu ao clicar em um item
+    mobileMenuItems.forEach((item) => {
+      item.addEventListener("click", function () {
+        mobileMenu.classList.remove("active");
+        const lines = mobileMenuToggle.querySelectorAll(".hamburger-line");
+        lines[0].style.transform = "none";
+        lines[0].style.background =
+          "linear-gradient(90deg, var(--color-gold), var(--color-gold-light))";
+        lines[1].style.opacity = "1";
+        lines[1].style.transform = "none";
+        lines[2].style.transform = "none";
+        lines[2].style.background =
+          "linear-gradient(90deg, var(--color-gold), var(--color-gold-light))";
+      });
+    });
+
+    // Fechar menu ao clicar fora
+    document.addEventListener("click", function (event) {
+      if (
+        !mobileMenuToggle.contains(event.target) &&
+        !mobileMenu.contains(event.target)
+      ) {
+        mobileMenu.classList.remove("active");
+        const lines = mobileMenuToggle.querySelectorAll(".hamburger-line");
+        lines[0].style.transform = "none";
+        lines[0].style.background =
+          "linear-gradient(90deg, var(--color-gold), var(--color-gold-light))";
+        lines[1].style.opacity = "1";
+        lines[1].style.transform = "none";
+        lines[2].style.transform = "none";
+        lines[2].style.background =
+          "linear-gradient(90deg, var(--color-gold), var(--color-gold-light))";
+      }
+    });
+  }
+}
