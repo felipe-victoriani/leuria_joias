@@ -5,8 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Semijoias elegantes e sofisticadas. Descubra nossa coleção exclusiva."
+      content="Léuria Jara - Semijoias exclusivas, elegantes e sofisticadas. Anéis, colares, brincos e pulseiras com design atemporal. Entrega para todo Brasil."
     />
+    <meta
+      name="keywords"
+      content="semijoias, joias, acessórios femininos, anéis, colares, brincos, pulseiras, elegância, sofisticação"
+    />
+    <meta name="author" content="Léuria Jara" />
+    <meta
+      property="og:title"
+      content="Léuria Jara | Elegância em Cada Detalhe"
+    />
+    <meta
+      property="og:description"
+      content="Semijoias exclusivas e elegantes com design atemporal"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://leuria-jara.web.app" />
     <title>léuria Jara | Elegância em Cada Detalhe</title>
 
     <!-- Google Fonts -->
@@ -55,11 +70,14 @@
           <!-- Mobile Menu -->
           <div class="mobile-menu" id="mobileMenu">
             <a href="#colecao" class="mobile-menu-item">Ver Coleção</a>
-            <a href="#colecao" class="mobile-menu-item">Bolsas</a>
-            <a href="#colecao" class="mobile-menu-item">Folheados</a>
-            <a href="#colecao" class="mobile-menu-item">Semi joias</a>
-            <a href="#colecao" class="mobile-menu-item">acessórios de cabelo</a>
-            <a href="#colecao" class="mobile-menu-item">Óculos de sol</a>
+            <a href="#bolsas" class="mobile-menu-item">Bolsas</a>
+            <a href="#folheados" class="mobile-menu-item">Folheados</a>
+            <a href="#semi-joias" class="mobile-menu-item">Semi joias</a>
+            <a href="#acessorios-cabelo" class="mobile-menu-item"
+              >acessórios de cabelo</a
+            >
+            <a href="#oculos-sol" class="mobile-menu-item">Óculos de sol</a>
+            <a href="#cintos" class="mobile-menu-item">Cintos</a>
           </div>
         </div>
       </div>
@@ -68,6 +86,39 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-overlay"></div>
+      <!-- Botão de teste temporário -->
+      <button
+        onclick="testarFirebaseSimples()"
+        style="
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 9999;
+          background: red;
+          color: white;
+          padding: 10px;
+          border: none;
+          border-radius: 5px;
+        "
+      >
+        Testar Firebase
+      </button>
+      
+      <!-- Segundo botão para adicionar produto -->
+      <button
+        onclick="adicionarProdutoTeste()"
+          top: 60px;
+          right: 10px;
+          z-index: 9999;
+          background: green;
+          color: white;
+          padding: 10px;
+          border: none;
+          border-radius: 5px;
+        "
+      >
+        Adicionar Produto Teste
+      </button>
 
       <div class="hero-content"></div>
       <div class="hero-scroll">
@@ -78,7 +129,7 @@
     <!-- Sobre -->
     <section class="about">
       <div class="container">
-        <div class="about-content fade-in-scroll">
+        <div class="about-content">
           <h2 class="section-title">Sobre Nós</h2>
           <p class="about-text">
             Cada peça é cuidadosamente selecionada para você que aprecia
@@ -89,23 +140,97 @@
       </div>
     </section>
 
-    <!-- Coleção de Produtos -->
+    <!-- Coleção Principal -->
     <section class="collection" id="colecao">
       <div class="container">
         <h2 class="section-title fade-in-scroll">Nossa Coleção</h2>
         <p class="section-subtitle fade-in-scroll">
-          Peças exclusivas para realçar sua beleza
+          Descubra peças exclusivas que complementam seu estilo único
         </p>
-
-        <!-- Loading State -->
-        <div class="loading" id="loading">
-          <div class="spinner"></div>
-          <p>Carregando produtos...</p>
-        </div>
-
-        <!-- Grid de Produtos -->
         <div class="products-grid" id="productsGrid">
-          <!-- Os produtos serão carregados dinamicamente aqui -->
+          <!-- Produtos serão carregados aqui -->
+          <div class="loading-products">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Carregando produtos...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Bolsas -->
+    <section class="category-section" id="bolsas">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Bolsas</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Bolsas elegantes para complementar seu visual
+        </p>
+        <div class="products-grid" id="bolsasGrid">
+          <!-- Produtos de bolsas serão carregados aqui -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Folheados -->
+    <section class="category-section" id="folheados">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Folheados</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Peças folheadas com acabamento sofisticado
+        </p>
+        <div class="products-grid" id="folheadosGrid">
+          <!-- Produtos folheados serão carregados aqui -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Semi Joias -->
+    <section class="category-section" id="semi-joias">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Semi Joias</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Semi joias de alta qualidade e durabilidade
+        </p>
+        <div class="products-grid" id="semiJoiasGrid">
+          <!-- Produtos de semi joias serão carregados aqui -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Acessórios de Cabelo -->
+    <section class="category-section" id="acessorios-cabelo">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Acessórios de Cabelo</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Acessórios únicos para valorizar seu penteado
+        </p>
+        <div class="products-grid" id="acessoriosCabeloGrid">
+          <!-- Produtos de acessórios de cabelo serão carregados aqui -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Óculos de Sol -->
+    <section class="category-section" id="oculos-sol">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Óculos de Sol</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Proteção e estilo para todos os momentos
+        </p>
+        <div class="products-grid" id="oculosSolGrid">
+          <!-- Produtos de óculos de sol serão carregados aqui -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Cintos -->
+    <section class="category-section" id="cintos">
+      <div class="container">
+        <h2 class="section-title fade-in-scroll">Cintos</h2>
+        <p class="section-subtitle fade-in-scroll">
+          Cintos que combinam funcionalidade e elegância
+        </p>
+        <div class="products-grid" id="cintosGrid">
+          <!-- Produtos de cintos serão carregados aqui -->
         </div>
       </div>
     </section>
@@ -181,12 +306,78 @@
       </div>
     </footer>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase CDN (v10+) - Carregamento Otimizado -->
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"
+    ></script>
 
-    <!-- Scripts -->
-    <script src="firebase-config.js"></script>
-    <script src="script.js"></script>
+    <!-- Scripts Principais -->
+    <script defer src="firebase-config.js"></script>
+    <script defer src="script.js"></script>
+
+    <!-- Script de teste temporário -->
+    <script>
+      function testarFirebaseSimples() {
+        console.log("🧪 Testando Firebase simples...");
+
+        setTimeout(() => {
+          if (typeof loadProductsFromFirestore === "function") {
+            loadProductsFromFirestore()
+              .then((produtos) => {
+                console.log("Produtos encontrados:", produtos);
+                alert(`Firebase: ${produtos.length} produtos encontrados`);
+
+                if (produtos.length === 0) {
+                  alert("Sem produtos. Vá para o admin e adicione um produto.");
+                }
+              })
+              .catch((error) => {
+                console.error("Erro:", error);
+                alert("Erro: " + error.message);
+              });
+          } else {
+            alert("Firebase ainda não carregou. Aguarde e tente novamente.");
+          }
+        }, 2000); // Aguarda 2 segundos para Firebase carregar
+      }
+
+      function adicionarProdutoTeste() {
+        console.log("🧪 Adicionando produto teste...");
+
+        setTimeout(() => {
+          if (typeof addProductToFirestore === "function") {
+            const produto = {
+              name: "Produto Teste",
+              description: "Teste de produto",
+              price: 50,
+              category: "folheados",
+              image:
+                "https://via.placeholder.com/300x300/gold/white?text=Teste",
+              outOfStock: false,
+            };
+
+            addProductToFirestore(produto)
+              .then((id) => {
+                alert("Produto adicionado! ID: " + id);
+                location.reload();
+              })
+              .catch((error) => {
+                alert("Erro ao adicionar: " + error.message);
+              });
+          } else {
+            alert("Função não disponível ainda.");
+          }
+        }, 2000);
+      }
+    </script>
   </body>
 </html>

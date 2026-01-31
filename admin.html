@@ -244,9 +244,19 @@
               type="text"
               id="username"
               name="username"
-              placeholder="Digite seu usuário"
+              placeholder="leuria21@gmail.com"
               required
             />
+            <small
+              style="
+                color: var(--color-gray);
+                font-size: 0.8rem;
+                margin-top: 0.3rem;
+                display: block;
+              "
+            >
+              💡 Use: leuria21@gmail.com
+            </small>
           </div>
 
           <div class="form-group">
@@ -279,20 +289,49 @@
       const loginForm = document.getElementById("loginForm");
       const errorMessage = document.getElementById("errorMessage");
 
+      // Credenciais válidas
+      const VALID_CREDENTIALS = {
+        admin: "leuriajara2026",
+        "leuria21@gmail.com": "leuriajara2026",
+        leuria: "leuriajara2026",
+      };
+
       loginForm.addEventListener("submit", function (e) {
         e.preventDefault();
 
-        const username = document.getElementById("username").value;
+        const username = document.getElementById("username").value.trim();
         const password = document.getElementById("password").value;
 
-        // Credenciais temporárias (IMPORTANTE: Isso é apenas para demonstração)
-        // Em produção, use autenticação segura no backend
-        if (username === "admin" && password === "leuriajara2026") {
+        console.log("Tentativa de login:", username); // Debug
+
+        // Verificar credenciais
+        if (
+          VALID_CREDENTIALS[username] &&
+          VALID_CREDENTIALS[username] === password
+        ) {
           // Login bem-sucedido
+          console.log("Login bem-sucedido!"); // Debug
+
+          // Salvar estado de login
           sessionStorage.setItem("adminLoggedIn", "true");
-          window.location.href = "dashboard.html";
+          localStorage.setItem(
+            "adminEmail",
+            username.includes("@") ? username : "leuria21@gmail.com",
+          );
+
+          // Feedback visual
+          const loginForm = document.querySelector("form");
+          loginForm.style.transform = "scale(0.95)";
+          loginForm.style.opacity = "0.8";
+
+          // Redirecionar
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 500);
         } else {
-          // Mostrar erro
+          // Login falhou
+          console.log("Login falhou!"); // Debug
+
           errorMessage.classList.add("show");
 
           // Esconder erro após 3 segundos
@@ -300,15 +339,19 @@
             errorMessage.classList.remove("show");
           }, 3000);
 
-          // Limpar campos
+          // Limpar senha
           document.getElementById("password").value = "";
         }
       });
 
       // Verificar se já está logado
       if (sessionStorage.getItem("adminLoggedIn") === "true") {
+        console.log("Usuário já logado, redirecionando...");
         window.location.href = "dashboard.html";
       }
+
+      // Debug: Mostrar credenciais válidas no console
+      console.log("Credenciais válidas:", Object.keys(VALID_CREDENTIALS));
     </script>
   </body>
 </html>
