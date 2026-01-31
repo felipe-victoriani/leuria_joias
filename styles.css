@@ -1,4 +1,72 @@
 /* ========================================
+   LAZY LOADING E PERFORMANCE
+   ======================================== */
+
+.lazy-image {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lazy-image.loaded {
+  opacity: 1;
+}
+
+.image-placeholder {
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-light) 25%,
+    transparent 50%,
+    var(--color-gray-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ========================================
+   NOTIFICAÇÕES
+   ======================================== */
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  color: white;
+  z-index: 10000;
+  max-width: 300px;
+  word-wrap: break-word;
+  font-family: var(--font-secondary);
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+}
+
+.notification-success {
+  background: #4caf50;
+}
+
+.notification-error {
+  background: #f44336;
+}
+
+.notification-warning {
+  background: #ff9800;
+}
+
+.notification-info {
+  background: #2196f3;
+}
+
+/* ========================================
    RESET E VARIÁVEIS
    ======================================== */
 
@@ -40,6 +108,11 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -174,6 +247,31 @@ a {
 .cart-btn:hover {
   color: var(--color-gold);
   transform: scale(1.1);
+}
+
+.reload-btn {
+  background: transparent;
+  border: 2px solid var(--color-gold);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  color: var(--color-gold);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+}
+
+.reload-btn:hover {
+  background: var(--color-gold);
+  color: var(--color-white);
+  transform: rotate(180deg);
+}
+
+.reload-btn i {
+  font-size: 0.9rem;
 }
 
 .cart-count {
@@ -567,9 +665,63 @@ a {
   background: var(--color-marble);
 }
 
+.collection .section-title {
+  text-align: center;
+  margin-bottom: var(--spacing-sm);
+}
+
 .section-subtitle {
   text-align: center;
   color: var(--color-green);
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-lg);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.loading-products {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  color: var(--color-gray);
+}
+
+.loading-products i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--color-gold);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-products {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  color: var(--color-gray);
+  text-align: center;
+}
+
+.no-products i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.3;
+}
+
+.no-products small {
+  margin-top: 0.5rem;
+  opacity: 0.7;
+  font-style: italic;
+}
   font-size: 1rem;
   margin-top: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
@@ -708,6 +860,45 @@ a {
   background: var(--color-gray-light);
   color: var(--color-gray);
   cursor: not-allowed;
+}
+
+/* ========================================
+   SEÇÕES DE CATEGORIA
+   ======================================== */
+
+.category-section {
+  padding: var(--spacing-xl) 0;
+  background: var(--color-white);
+  margin-bottom: 2rem;
+}
+
+.category-section:nth-child(even) {
+  background: var(--color-marble);
+}
+
+.category-section .section-title {
+  margin-bottom: var(--spacing-sm);
+}
+
+.category-section .section-subtitle {
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-category {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-gray);
+}
+
+.empty-category i {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-gray-light);
+}
+
+.empty-category p {
+  font-size: 1.1rem;
 }
 
 /* ========================================

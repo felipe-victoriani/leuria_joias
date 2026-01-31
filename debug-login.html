@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔧 Debug Login - Léuria Jara</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .debug-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .success {
+        background: #d4edda;
+        border-left: 4px solid #28a745;
+      }
+      .error {
+        background: #f8d7da;
+        border-left: 4px solid #dc3545;
+      }
+      .info {
+        background: #d1ecf1;
+        border-left: 4px solid #17a2b8;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .danger {
+        background: #dc3545;
+      }
+      .danger:hover {
+        background: #c82333;
+      }
+      pre {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      input {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔧 Debug Sistema de Login</h1>
+
+    <div class="debug-card info">
+      <h3>📋 Status Atual</h3>
+      <p><strong>SessionStorage:</strong> <span id="sessionStatus">--</span></p>
+      <p><strong>LocalStorage:</strong> <span id="localStatus">--</span></p>
+      <p><strong>URL Atual:</strong> <span id="currentUrl">--</span></p>
+    </div>
+
+    <div class="debug-card">
+      <h3>🧪 Teste de Login</h3>
+      <input
+        type="text"
+        id="testUser"
+        placeholder="Usuário"
+        value="leuria21@gmail.com"
+      />
+      <input
+        type="password"
+        id="testPass"
+        placeholder="Senha"
+        value="leuriajara2026"
+      />
+      <button onclick="testLogin()">Testar Login</button>
+      <div id="loginResult"></div>
+    </div>
+
+    <div class="debug-card">
+      <h3>🔑 Credenciais Válidas</h3>
+      <pre id="credentials"></pre>
+    </div>
+
+    <div class="debug-card">
+      <h3>⚙️ Ações</h3>
+      <button onclick="clearStorage()">Limpar Storage</button>
+      <button onclick="setLogin()">Forçar Login</button>
+      <button onclick="goToAdmin()">Ir para Admin</button>
+      <button onclick="goToDashboard()">Ir para Dashboard</button>
+      <button class="danger" onclick="clearAll()">Reset Completo</button>
+    </div>
+
+    <div class="debug-card">
+      <h3>📊 Logs de Debug</h3>
+      <div
+        id="debugLogs"
+        style="
+          height: 200px;
+          overflow-y: auto;
+          background: #f8f9fa;
+          padding: 10px;
+          border-radius: 4px;
+        "
+      ></div>
+    </div>
+
+    <script>
+      // Credenciais válidas (mesmo do admin.html)
+      const VALID_CREDENTIALS = {
+        admin: "leuriajara2026",
+        "leuria21@gmail.com": "leuriajara2026",
+        leuria: "leuriajara2026",
+      };
+
+      // Função de log
+      function log(message, type = "info") {
+        const logs = document.getElementById("debugLogs");
+        const timestamp = new Date().toLocaleTimeString();
+        const color =
+          type === "error" ? "red" : type === "success" ? "green" : "blue";
+        logs.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+        logs.scrollTop = logs.scrollHeight;
+        console.log(message);
+      }
+
+      // Atualizar status
+      function updateStatus() {
+        const sessionLoggedIn = sessionStorage.getItem("adminLoggedIn");
+        const adminEmail = localStorage.getItem("adminEmail");
+
+        document.getElementById("sessionStatus").textContent =
+          sessionLoggedIn || "null";
+        document.getElementById("localStatus").textContent =
+          adminEmail || "null";
+        document.getElementById("currentUrl").textContent =
+          window.location.href;
+
+        // Mostrar credenciais
+        document.getElementById("credentials").textContent = JSON.stringify(
+          VALID_CREDENTIALS,
+          null,
+          2,
+        );
+      }
+
+      // Teste de login
+      function testLogin() {
+        const username = document.getElementById("testUser").value.trim();
+        const password = document.getElementById("testPass").value;
+        const resultDiv = document.getElementById("loginResult");
+
+        log(`Testando login: ${username}`);
+
+        if (
+          VALID_CREDENTIALS[username] &&
+          VALID_CREDENTIALS[username] === password
+        ) {
+          resultDiv.innerHTML =
+            '<div class="debug-card success">✅ Login válido!</div>';
+          log("Login bem-sucedido!", "success");
+
+          // Salvar estado
+          sessionStorage.setItem("adminLoggedIn", "true");
+          localStorage.setItem(
+            "adminEmail",
+            username.includes("@") ? username : "leuria21@gmail.com",
+          );
+
+          updateStatus();
+        } else {
+          resultDiv.innerHTML =
+            '<div class="debug-card error">❌ Credenciais inválidas!</div>';
+          log("Login falhou!", "error");
+        }
+      }
+
+      // Ações
+      function clearStorage() {
+        sessionStorage.clear();
+        localStorage.clear();
+        log("Storage limpo", "info");
+        updateStatus();
+      }
+
+      function setLogin() {
+        sessionStorage.setItem("adminLoggedIn", "true");
+        localStorage.setItem("adminEmail", "leuria21@gmail.com");
+        log("Login forçado", "success");
+        updateStatus();
+      }
+
+      function goToAdmin() {
+        window.location.href = "admin.html";
+      }
+
+      function goToDashboard() {
+        window.location.href = "dashboard.html";
+      }
+
+      function clearAll() {
+        if (confirm("Resetar tudo?")) {
+          clearStorage();
+          location.reload();
+        }
+      }
+
+      // Inicializar
+      updateStatus();
+      log("Debug iniciado");
+
+      // Auto-atualizar status a cada 2s
+      setInterval(updateStatus, 2000);
+    </script>
+  </body>
+</html>

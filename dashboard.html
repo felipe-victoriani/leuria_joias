@@ -244,7 +244,8 @@
       }
 
       .form-group input,
-      .form-group textarea {
+      .form-group textarea,
+      .form-group select {
         width: 100%;
         padding: 0.8rem;
         border: 2px solid var(--color-gray-light);
@@ -252,10 +253,12 @@
         font-family: var(--font-secondary);
         font-size: 0.95rem;
         transition: var(--transition);
+        background: var(--color-white);
       }
 
       .form-group input:focus,
-      .form-group textarea:focus {
+      .form-group textarea:focus,
+      .form-group select:focus {
         outline: none;
         border-color: var(--color-gold);
         box-shadow: 0 0 0 3px rgba(184, 148, 31, 0.1);
@@ -353,6 +356,17 @@
         color: var(--color-gray);
         font-size: 0.9rem;
         margin-bottom: 0.3rem;
+      }
+
+      .product-category {
+        color: var(--color-green) !important;
+        font-weight: 500 !important;
+        font-size: 0.8rem !important;
+        background: var(--color-marble);
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        display: inline-block;
+        margin-bottom: 0.5rem !important;
       }
 
       .product-price {
@@ -535,6 +549,17 @@
           <span style="font-size: 0.8em; opacity: 0.9"> | Dashboard</span>
         </h1>
         <div class="header-actions">
+          <span
+            id="adminInfo"
+            style="
+              color: rgba(255, 255, 255, 0.8);
+              font-size: 0.9rem;
+              margin-right: 1rem;
+            "
+          >
+            <i class="fas fa-user-circle"></i>
+            <span id="adminEmail">leuria21@gmail.com</span>
+          </span>
           <a href="index.html" class="btn btn-secondary">
             <i class="fas fa-home"></i>
             Ver Site
@@ -549,8 +574,17 @@
 
     <main class="dashboard-container">
       <div class="welcome-section">
-        <h2>Bem-vinda, Administradora! 👋</h2>
-        <p>Gerencie sua loja de semijoias de forma simples e eficiente.</p>
+        <h2>Bem-vinda ao Dashboard! 👋</h2>
+        <p>Gerencie sua loja de semijoias de forma simple e eficiente.</p>
+        <p
+          style="
+            font-size: 0.9rem;
+            color: var(--color-gray);
+            margin-top: 0.5rem;
+          "
+        >
+          🔥 Conectado ao Firebase | 📊 Projeto: loja-leuria
+        </p>
       </div>
 
       <div class="stats-grid">
@@ -612,6 +646,19 @@
                 required
                 placeholder="99.90"
               />
+            </div>
+
+            <div class="form-group">
+              <label for="productCategory">Categoria *</label>
+              <select id="productCategory" required>
+                <option value="">Selecione uma categoria</option>
+                <option value="bolsas">Bolsas</option>
+                <option value="folheados">Folheados</option>
+                <option value="semi-joias">Semi joias</option>
+                <option value="acessorios-cabelo">Acessórios de cabelo</option>
+                <option value="oculos-sol">Óculos de sol</option>
+                <option value="cintos">Cintos</option>
+              </select>
             </div>
 
             <div class="form-group">
@@ -686,6 +733,19 @@
           </div>
 
           <div class="form-group">
+            <label for="editProductCategory">Categoria *</label>
+            <select id="editProductCategory" required>
+              <option value="">Selecione uma categoria</option>
+              <option value="bolsas">Bolsas</option>
+              <option value="folheados">Folheados</option>
+              <option value="semi-joias">Semi joias</option>
+              <option value="acessorios-cabelo">Acessórios de cabelo</option>
+              <option value="oculos-sol">Óculos de sol</option>
+              <option value="cintos">Cintos</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="editProductImage">Imagem do Produto</label>
             <input type="file" id="editProductImage" accept="image/*" />
             <small
@@ -724,18 +784,89 @@
     </div>
 
     <script>
-      // Verificar se está logado
-      if (sessionStorage.getItem("adminLoggedIn") !== "true") {
+      // Verificar autenticação IMEDIATAMENTE
+      console.log("Verificando autenticação...");
+      const isLoggedIn = sessionStorage.getItem("adminLoggedIn");
+      console.log("Status de login:", isLoggedIn);
+
+      if (isLoggedIn !== "true") {
+        console.log("Acesso negado - redirecionando para login");
+        alert("❌ Acesso negado! Faça login primeiro.");
         window.location.href = "admin.html";
+      } else {
+        console.log("Acesso autorizado!");
       }
 
       // Sistema de gerenciamento de produtos
-      let products = JSON.parse(localStorage.getItem("products")) || [];
+      let products = [];
+      let isFirebaseReady = false;
 
       function logout() {
         if (confirm("Deseja realmente sair?")) {
           sessionStorage.removeItem("adminLoggedIn");
+          localStorage.removeItem("adminEmail");
           window.location.href = "admin.html";
+        }
+      }
+
+      // Função para atualizar informações do admin
+      function updateAdminInfo() {
+        const adminEmail =
+          localStorage.getItem("adminEmail") || "leuria21@gmail.com";
+        const emailElement = document.getElementById("adminEmail");
+        if (emailElement) {
+          emailElement.textContent = adminEmail;
+        }
+      }
+
+      // Inicializar aplicação
+      async function init() {
+        try {
+          // Verificar se Firebase está disponível
+          if (typeof db !== "undefined") {
+            isFirebaseReady = true;
+
+            // Tentar carregar produtos do Firebase
+            const firebaseProducts = await loadProductsFromFirestore();
+
+            if (firebaseProducts.length > 0) {
+              products = firebaseProducts;
+              console.log("Produtos carregados do Firebase:", products.length);
+            } else {
+              // Carregar do localStorage como fallback
+              const localProducts = localStorage.getItem("products");
+              if (localProducts) {
+                products = JSON.parse(localProducts);
+                // Sincronizar com Firebase
+                await saveProductsToFirestore(products);
+                console.log("Produtos locais sincronizados com Firebase");
+              }
+            }
+          } else {
+            // Firebase não disponível, usar apenas localStorage
+            const localProducts = localStorage.getItem("products");
+            if (localProducts) {
+              products = JSON.parse(localProducts);
+            }
+            console.log("Firebase indisponível, usando localStorage");
+          }
+        } catch (error) {
+          console.error("Erro ao inicializar:", error);
+          // Fallback para localStorage
+          const localProducts = localStorage.getItem("products");
+          if (localProducts) {
+            products = JSON.parse(localProducts);
+          }
+        }
+
+        // Renderizar interface
+        updateAdminInfo();
+        renderProducts();
+        updateStats();
+
+        // Configurar listeners em tempo real se Firebase estiver disponível
+        if (isFirebaseReady && typeof setupRealtimeListeners === "function") {
+          setupRealtimeListeners();
         }
       }
 
@@ -800,23 +931,42 @@
             id: Date.now(),
             name: document.getElementById("productName").value,
             price: parseFloat(document.getElementById("productPrice").value),
+            category: document.getElementById("productCategory").value,
             image: imageData,
             description: document.getElementById("productDescription").value,
             outOfStock: false,
             createdAt: new Date().toISOString(),
           };
 
-          products.push(newProduct);
-          saveProducts();
-          renderProducts();
-          updateStats();
+          try {
+            // Adicionar ao Firebase se disponível
+            if (
+              isFirebaseReady &&
+              typeof addProductToFirestore === "function"
+            ) {
+              const firebaseId = await addProductToFirestore(newProduct);
+              newProduct.id = firebaseId; // Usar ID do Firebase
+              console.log("Produto adicionado ao Firebase com ID:", firebaseId);
+            }
 
-          // Limpar formulário
-          this.reset();
-          document.getElementById("imagePreview").style.display = "none";
+            products.push(newProduct);
 
-          // Feedback visual
-          alert("✅ Produto adicionado com sucesso!");
+            // Salvar apenas no localStorage (não sobrescrever o Firebase)
+            localStorage.setItem("products", JSON.stringify(products));
+
+            renderProducts();
+            updateStats();
+
+            // Limpar formulário
+            this.reset();
+            document.getElementById("imagePreview").style.display = "none";
+
+            // Feedback visual
+            alert("✅ Produto adicionado com sucesso!");
+          } catch (error) {
+            console.error("Erro ao adicionar produto:", error);
+            alert("❌ Erro ao adicionar produto. Tente novamente.");
+          }
         });
 
       // Função para converter arquivo para base64
@@ -829,9 +979,34 @@
         });
       }
 
-      // Salvar produtos no localStorage
-      function saveProducts() {
-        localStorage.setItem("products", JSON.stringify(products));
+      // Função para obter o label da categoria
+      function getCategoryLabel(category) {
+        const categories = {
+          bolsas: "Bolsas",
+          folheados: "Folheados",
+          "semi-joias": "Semi joias",
+          "acessorios-cabelo": "Acessórios de cabelo",
+          "oculos-sol": "Óculos de sol",
+          cintos: "Cintos",
+          "sem-categoria": "Sem categoria",
+        };
+        return categories[category] || "Categoria não definida";
+      }
+
+      // Salvar produtos no localStorage (Firebase é gerenciado individualmente)
+      async function saveProducts() {
+        try {
+          // Salvar no localStorage como backup
+          localStorage.setItem("products", JSON.stringify(products));
+          console.log("Produtos salvos no localStorage");
+
+          // NOTA: Não sobrescrevemos o Firebase aqui pois cada produto
+          // é adicionado/editado individualmente via addProductToFirestore()
+        } catch (error) {
+          console.error("Erro ao salvar produtos:", error);
+          // Garantir que pelo menos o localStorage foi salvo
+          localStorage.setItem("products", JSON.stringify(products));
+        }
       }
 
       // Renderizar lista de produtos
@@ -856,6 +1031,7 @@
             <img src="${product.image}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/100x100/e5e5e5/5a5a5a?text=Sem+Imagem'">
             <div class="product-details">
               <h4>${product.name}</h4>
+              <p class="product-category">📂 ${getCategoryLabel(product.category || "sem-categoria")}</p>
               <p>${product.description}</p>
               <p class="product-price">R$ ${product.price.toFixed(2).replace(".", ",")}</p>
               ${product.outOfStock ? '<span class="product-badge">ESGOTADO</span>' : ""}
@@ -886,6 +1062,8 @@
         document.getElementById("editProductId").value = product.id;
         document.getElementById("editProductName").value = product.name;
         document.getElementById("editProductPrice").value = product.price;
+        document.getElementById("editProductCategory").value =
+          product.category || "";
         document.getElementById("editProductDescription").value =
           product.description;
 
@@ -923,22 +1101,38 @@
               imageData = await convertFileToBase64(imageFile);
             }
 
-            products[productIndex] = {
+            const updatedProduct = {
               ...products[productIndex],
               name: document.getElementById("editProductName").value,
               price: parseFloat(
                 document.getElementById("editProductPrice").value,
               ),
+              category: document.getElementById("editProductCategory").value,
               image: imageData,
               description: document.getElementById("editProductDescription")
                 .value,
             };
 
-            saveProducts();
-            renderProducts();
-            closeEditModal();
+            try {
+              // Atualizar no Firebase se disponível
+              if (
+                isFirebaseReady &&
+                typeof updateProductInFirestore === "function"
+              ) {
+                await updateProductInFirestore(id, updatedProduct);
+                console.log("Produto atualizado no Firebase");
+              }
 
-            alert("✅ Produto atualizado com sucesso!");
+              products[productIndex] = updatedProduct;
+              await saveProducts();
+              renderProducts();
+              closeEditModal();
+
+              alert("✅ Produto atualizado com sucesso!");
+            } catch (error) {
+              console.error("Erro ao atualizar produto:", error);
+              alert("❌ Erro ao atualizar produto. Tente novamente.");
+            }
           }
         });
 
@@ -954,18 +1148,32 @@
       }
 
       // Excluir produto
-      function deleteProduct(id) {
+      async function deleteProduct(id) {
         if (
           confirm(
             "⚠️ Tem certeza que deseja excluir este produto?\n\nEsta ação não pode ser desfeita.",
           )
         ) {
-          products = products.filter((p) => p.id !== id);
-          saveProducts();
-          renderProducts();
-          updateStats();
+          try {
+            // Deletar do Firebase se disponível
+            if (
+              isFirebaseReady &&
+              typeof deleteProductFromFirestore === "function"
+            ) {
+              await deleteProductFromFirestore(id);
+              console.log("Produto deletado do Firebase");
+            }
 
-          alert("✅ Produto excluído com sucesso!");
+            products = products.filter((p) => p.id !== id);
+            await saveProducts();
+            renderProducts();
+            updateStats();
+
+            alert("✅ Produto excluído com sucesso!");
+          } catch (error) {
+            console.error("Erro ao excluir produto:", error);
+            alert("❌ Erro ao excluir produto. Tente novamente.");
+          }
         }
       }
 
@@ -981,5 +1189,22 @@
       // Inicializar
       init();
     </script>
+
+    <!-- Firebase CDN (v10+) -->
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"
+    ></script>
+
+    <!-- Firebase Config -->
+    <script defer src="firebase-config.js"></script>
   </body>
 </html>
